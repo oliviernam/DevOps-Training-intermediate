@@ -4,8 +4,8 @@ CloudOne Conformity is abbreviated by `CC`
 ## Demoing
 **Before start, Login to AWS!**
 
-*About*
-* Basically, `CC` at it's base is an infrastructure monitoring tool
+### About Conformity
+* Basically, `CC` at it's base is an infrastructure monitoring tool for
   * AWS
   * Azure
   * Google (planned)
@@ -13,23 +13,25 @@ CloudOne Conformity is abbreviated by `CC`
 * `CC` currently has **540+ different rule** and
 * covers **70 different services**
 
-*Dashboard*
+### Start with the Dashboard
 * All accounts dashboard provides a **high level overview**
   * **how many checks are done**
   * **overview on risk, succeeds and failures**
+* Geographicyl spread etc.
 
-
-*Digging in*
+### Now begin Digging in
 ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/01_high_level_overview.png "High Level Overview")
 * **Dashboard --> Browse all checks**
   * High level overview what's surfaced on your accounts
-  * **Services S3, dynamodb, rds**
-    * only security
-    * all frameworks
-    * Risk level high++
-    * Status Failures
+  * Typically by far to many findings, usually. So we need to limit and prioritize them.
+  * Filter Settings you can use:
+    * **Services S3, dynamodb, rds**
+      * only security
+      * all frameworks
+      * Risk level high++
+      * Status Failures
   * It's now reasonable to address
-  * Can generate a **report** - Selected Services Security Only
+  * Optionally, you can generate a **report** with Selected Services Security Only
   * Go to **S3 Bucker Default Encryption**
     * Here we do have underneeth the three checks taken out associated to that account
     * We tell about the **context**
