@@ -28,7 +28,7 @@ Important for demoing `CC`, **login to your AWS!**
 
 ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/01_high_level_overview.png "High Level Overview")
 ### Now Begin Digging in
-![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/02_browse_all_checks "Browse all Checks")
+![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/02_browse_all_checks.png "Browse all Checks")
 * **Dashboard --> Browse all checks**
   * High level overview what's surfaced on your accounts
   * Typically by far to many findings, usually. So we need to limit and prioritize them.
@@ -41,7 +41,7 @@ Important for demoing `CC`, **login to your AWS!**
   * It's now reasonable to address
   * Optionally, you can generate a **report** with Selected Services Security Only
   * Go to **S3 Bucker Default Encryption**
-  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/03_s3_bucket_default_encryption "S3 Bucket Default Encryption")
+  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/03_s3_bucket_default_encryption.png "S3 Bucket Default Encryption")
     * Here we do have underneeth the checks taken out associated to that account
     * `CC` tells about the **context**
     * Direct **Link** to the ressource - brings you to the resource in AWS
