@@ -53,20 +53,25 @@ Important for demoing `CC`, **login to your AWS!**
 
 ### Rule Configuration
   * **Dashboard --> Settings --> Configure now**
+  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/04_rule_settings.png "Rule Settings")
     * Filter for `non-active rules`, and `Requires configuration check`
     * Search for `regions`
+    ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/05_rule_regions.png "Rule Regions")
     * Most of the rules are active by default, but one can **customize** the active rules or configure custom rules
       * e.g. User activity in blacklisted regions
         * blacklist everything outside europe as an example
   * All rules can be configured
     * e.g. there are **very valid reasons** why you might want public read access to an s3 bucket (e.g. public web site)
     * Filter Services for `S3`
+    ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/06_rule_s3_bucket_read_access.png "Rule S3 Bucket Read Access")
     * S3 Bucket Public 'READ' Access
       * do exceptions here (S3 bucket name even with regex or tags)
     * Eliminating false positives
 
 ### Profiles
+  * **Dashboard Menubar --> Profiles**
   * An accounts configuration should be saved as a profile
+  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/07_profiles.png "Profiles")
     * Profiles - Baseline
       * All configurations are now saved as a new profile
   * Accounts can be grouped
@@ -74,6 +79,8 @@ Important for demoing `CC`, **login to your AWS!**
     * Creates views
 
 ### Reports
+  * **Dashboard --> Reports...**
+  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/08_configured_reports.png "Configured Reports")
   * New Report...
     * Same filtering but here you can save your filter options and define the report
     * Schedule them
@@ -84,8 +91,9 @@ Important for demoing `CC`, **login to your AWS!**
       * Filter as above
 
 ### Communication
+  * **Dashboard --> Settings (top right) --> Update communication settings...**
+  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/09_communication_settings.png "Update Communication Settings")
   * CC is designed that you don't need to login day by day.
-  * **Dashboard --> Settings (top right) --> Communication**
     * for that we have the communication settings which allows us to integrate into various systems
     * there is really no reason to logon anymore
     * all alerts are then send to that channel according to the configuration
@@ -96,8 +104,13 @@ Important for demoing `CC`, **login to your AWS!**
       * jira closes the ticket when the finding is mitigated
 
 ### Real Time Monitoring
+  * **Dashboard --> Threat monitoring**
+  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/10_threat_monitoring.png "Threat Monitoring")
   * Essentially it is a connection to `AWS CloudTrail` and `AWS CloudWatch`
   * `CC` is receiving a copy of the events
-    * Activity Dashboard
+    * **Open activity Dashboard**
+    ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/11_user_activity.png "User Activity")
+    * **Open monitoring dashboard**
+    ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/12_real_time_monitoring.png "Real-Time Monitoring")
 
 That was a very brief overview about CloudOne Conformity
