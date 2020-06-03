@@ -26,13 +26,14 @@ Important for demoing `CC`, **login to your AWS!**
   * **overview on risk, succeeds and failures**
 * Geographicyl spread etc.
 
-### Now Begin Digging in
 ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/01_high_level_overview.png "High Level Overview")
+### Now Begin Digging in
+![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/02_browse_all_checks "Browse all Checks")
 * **Dashboard --> Browse all checks**
   * High level overview what's surfaced on your accounts
   * Typically by far to many findings, usually. So we need to limit and prioritize them.
-  * Filter Settings you can use:
-    * Services `S3`, `dynamodb`, `rds`
+  * Filter Settings you can use *(this might be different in your AWS account, so please adapt if necessary)*:
+    * Services `S3`, `dynamodb`
       * only security
       * all frameworks
       * Risk level high++
@@ -40,6 +41,7 @@ Important for demoing `CC`, **login to your AWS!**
   * It's now reasonable to address
   * Optionally, you can generate a **report** with Selected Services Security Only
   * Go to **S3 Bucker Default Encryption**
+  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/03_s3_bucket_default_encryption "S3 Bucket Default Encryption")
     * Here we do have underneeth the checks taken out associated to that account
     * `CC` tells about the **context**
     * Direct **Link** to the ressource - brings you to the resource in AWS
@@ -58,7 +60,7 @@ Important for demoing `CC`, **login to your AWS!**
         * blacklist everything outside europe as an example
   * All rules can be configured
     * e.g. there are **very valid reasons** why you might want public read access to an s3 bucket (e.g. public web site)
-    * Filter for S3
+    * Filter Services for `S3`
     * S3 Bucket Public 'READ' Access
       * do exceptions here (S3 bucket name even with regex or tags)
     * Eliminating false positives
