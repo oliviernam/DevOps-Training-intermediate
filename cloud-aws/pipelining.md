@@ -23,10 +23,10 @@
 
 ## Create a Workspace
 
-* Select Create Cloud9 environment
-* Name it somehow like `ekscluster`
-* Choose “t3.small” for instance type, take all default values and click Create environment
-* When it comes up, customize the environment by closing the welcome tab and lower work area, and opening a new terminal tab in the main work area.
+- Select Create Cloud9 environment
+- Name it somehow like `ekscluster`
+- Choose “t3.small” for instance type, take all default values and click Create environment
+- When it comes up, customize the environment by closing the welcome tab and lower work area, and opening a new terminal tab in the main work area.
 
 ### Install Kubernetes tools
 
@@ -66,28 +66,28 @@ kubectl completion bash >>  ~/.bash_completion
 
 ### Create an IAM Role for the Workspace
 
-* Follow this deep link to create an IAM role with Administrator access.
+- Follow this deep link to create an IAM role with Administrator access.
 <https://console.aws.amazon.com/iam/home#/roles$new?step=review&commonUseCase=EC2%2BEC2&selectedUseCase=EC2&policies=arn:aws:iam::aws:policy%2FAdministratorAccess>
 
-* Confirm that AWS service and EC2 are selected, then click Next to view permissions.
-* Confirm that AdministratorAccess is checked, then click Next: Tags to assign tags.
-* Take the defaults, and click Next: Review to review.
-* Enter ekscluster-admin for the Name, and click Create role.
+- Confirm that AWS service and EC2 are selected, then click Next to view permissions.
+- Confirm that AdministratorAccess is checked, then click Next: Tags to assign tags.
+- Take the defaults, and click Next: Review to review.
+- Enter ekscluster-admin for the Name, and click Create role.
 
 ### Attach the IAM Role to the Workspace
 
-* Follow this deep link to find your Cloud9 EC2 instance
+- Follow this deep link to find your Cloud9 EC2 instance
 <https://console.aws.amazon.com/ec2/v2/home?#Instances:tag:Name=aws-cloud9-.*ekscluster.*;sort=desc:launchTime>
 
-* Select the instance, then choose Actions / Instance Settings / Attach/Replace IAM Rolec9instancerole
-* Choose ekscluster-admin from the IAM Role drop down, and select Apply
+- Select the instance, then choose Actions / Instance Settings / Attach/Replace IAM Rolec9instancerole
+- Choose ekscluster-admin from the IAM Role drop down, and select Apply
 
 ### Update IAM Settings for the Workspace
 
-* Return to your workspace and click the gear icon (in top right corner), or click to open a new tab and choose “Open Preferences”
-* Select AWS SETTINGS
-* Turn off AWS managed temporary credentials
-* Close the Preferences tab
+- Return to your workspace and click the gear icon (in top right corner), or click to open a new tab and choose “Open Preferences”
+- Select AWS SETTINGS
+- Turn off AWS managed temporary credentials
+- Close the Preferences tab
 
 To ensure temporary credentials aren’t already in place we will also remove any existing credentials file:
 
