@@ -24,7 +24,7 @@
 ## Create a Workspace
 
 - Select Create Cloud9 environment
-- Name it somehow like `ekscluster`
+- Name it somehow like `ekscluster` (at least have the word ekscluster within the name)
 - Choose “t3.small” for instance type, take all default values and click Create environment
 - When it comes up, customize the environment by closing the welcome tab and lower work area, and opening a new terminal tab in the main work area.
 

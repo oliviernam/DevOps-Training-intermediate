@@ -6,14 +6,14 @@
   - [Prepare for GKE Cluster](#prepare-for-gke-cluster)
   - [Create GKE Cluster](#create-gke-cluster)
   - [Deploy CloudOne Image Security](#deploy-cloudone-image-security)
+  - [Create Repository to Host the App Code](#create-repository-to-host-the-app-code)
+    - [Fork Sample Repository](#fork-sample-repository)
 
 ## Prerequisites
 
 - Enable Cloud Build API
 - Cloud Build, Google Cloud’s continuous integration (CI) and continuous delivery (CD) platform, lets you build software quickly across all languages. Get complete control over defining custom workflows for building, testing, and deploying across multiple environments such as VMs, serverless, Kubernetes, or Firebase.
 - Google Container Registry provides secure, private Docker repository storage on Google Cloud Platform. You can use gcloud to push images to your registry , then you can pull images using an HTTP endpoint from any machine, whether it's a Google Compute Engine instance or your own hardware. Learn more
-
-<https://codelabs.developers.google.com/codelabs/cloud-builder-gke-continuous-deploy/index.html?hl=de&_ga=2.54338280.176650333.1594637557-1961444407.1594637211#1>
 
 ## Create a Workspace
 
@@ -125,10 +125,26 @@ Your environment is ready!
 
 ## Deploy CloudOne Image Security
 
+Define some variables
+
+```shell
+export DSSC_NAMESPACE='smartcheck'
+export DSSC_USERNAME='administrator'
+export DSSC_TEMPPW='justatemppw'
+export DSSC_PASSWORD='trendmicro'
+export DSSC_REGUSER='administrator'
+export DSSC_REGPASSWORD='trendmicro'
+```
+
+Set the activation code for Smart Check
+
+```shell
+export DSSC_AC=<activation code>
+```
+
 Create CloudOne Image Security namespace
 
 ```shell
-export DSSC_NAMESPACE=smartcheck
 kubectl create namespace ${DSSC_NAMESPACE}
 ```
 
@@ -139,21 +155,16 @@ cat <<EOF>./req.conf
 [req]
   distinguished_name=req
 [san]
-  subjectAltName=DNS:*.${AWS_REGION}.elb.amazonaws.com
+  subjectAltName=DNS:*.smartcheck.com
 EOF
 
-openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout k8s.key -out k8s.crt -subj "/CN=*.${AWS_REGION}.elb.amazonaws.com" -extensions san -config req.conf
+openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout k8s.key -out k8s.crt -subj "/CN=*.smartcheck.com" -extensions san -config req.conf
 kubectl create secret tls k8s-certificate --cert=k8s.crt --key=k8s.key --dry-run=true -n ${DSSC_NAMESPACE} -o yaml | kubectl apply -f -
 ```
 
 Create overrides for Image Security:
 
 ```shell
-export DSSC_AC=<activation code>
-export DSSC_USERNAME=admin
-export DSSC_TEMPPW=TrendMicro
-export DSSC_REGUSER=reguser
-export DSSC_REGPASSWORD=TrendMicro
 cat <<EOF >./overrides.yml
 ##
 ## Default value: (none)
@@ -208,7 +219,7 @@ EOF
 Install Image Security
 
 ```shell
-helm install -n ${DSSC_NAMESPACE} --values overrides.yml deepsecurity-smartcheck https://github.com/deep-security/smartcheck-helm/archive/master.tar.gz > /dev/null
+helm install -n ${DSSC_NAMESPACE} --values overrides.yml deepsecurity-smartcheck https://github.com/deep-security/smartcheck-helm/archive/master.tar.gz
 ```
 
 Wait for Image Security to be up and do the initial password change:
@@ -216,7 +227,7 @@ Wait for Image Security to be up and do the initial password change:
 ```shell
 DSSC_HOST=''
 while [[ "$DSSC_HOST" == '' ]];do
-  export DSSC_HOST=`kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'`
+  export DSSC_HOST=`kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}'`
   sleep 10
 done
 DSSC_BEARERTOKEN=''
@@ -238,3 +249,15 @@ printf '%s \n' "     User    : ${DSSC_USERNAME}"
 printf '%s \n' "     Password: ${DSSC_PASSWORD}"
 printf '%s \n' "--------------"
 ```
+
+## Create Repository to Host the App Code
+
+### Fork Sample Repository
+
+We are now going to fork the sample Kubernetes service so that we will be able modify the repository and trigger builds.
+
+Login to GitHub and fork the Troopers app:
+
+<https://github.com/mawinkler/troopers>
+
+
