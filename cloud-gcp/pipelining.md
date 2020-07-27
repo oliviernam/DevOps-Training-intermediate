@@ -9,8 +9,11 @@
   - [Create Repository to Host the App Code](#create-repository-to-host-the-app-code)
     - [Fork Sample Repository](#fork-sample-repository)
     - [Create a Cloud Source Repository](#create-a-cloud-source-repository)
-    - [Create the](#create-the)
-    - [Set up automated triggers in Cloud Build](#set-up-automated-triggers-in-cloud-build)
+  - [Prepare the Cloud Build, Publishing and Kubernetes Deployment](#prepare-the-cloud-build-publishing-and-kubernetes-deployment)
+    - [Create Kubernetes Deployment and Service Definition](#create-kubernetes-deployment-and-service-definition)
+    - [Create the Build Trigger](#create-the-build-trigger)
+    - [Create the Build Specification cloudbuild.yaml](#create-the-build-specification-cloudbuildyaml)
+  - [Trigger the Pipeline](#trigger-the-pipeline)
   - [GKE](#gke)
 
 ## Prerequisites
@@ -71,7 +74,7 @@ Set up some variables.
 
 ```shell
 export PROJECT=$(gcloud info --format='value(config.project)')
-export ZONE=us-central1-b
+export ZONE=europe-west2-b
 export CLUSTER=gke-deploy-cluster
 ```
 
@@ -273,10 +276,10 @@ cd troopers
 ### Create a Cloud Source Repository
 
 ```shell
-gcloud source repos create default
+gcloud source repos create troopers
 git init
 git config credential.helper gcloud.sh
-git remote add gcp https://source.developers.google.com/p/$PROJECT/r/default
+git remote add gcp https://source.developers.google.com/p/$PROJECT/r/troopers
 ```
 
 Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your Git username.
@@ -295,12 +298,96 @@ git push gcp master
 ```
 
 The repository can be accessed via
-<https://source.developers.google.com/p/$PROJECT/r/default>
+<https://source.developers.google.com/p/$PROJECT/r/troopers>
 
-### Create the 
+## Prepare the Cloud Build, Publishing and Kubernetes Deployment
+
+### Create Kubernetes Deployment and Service Definition
 
 ```shell
 export IMAGE_NAME=troopers
+export IMAGE_TAG=latest
+cat <<EOF > app-gcp.json
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  name: ${IMAGE_NAME}
+  labels:
+    app: ${IMAGE_NAME}
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 5000
+    name: ${IMAGE_NAME}
+    targetPort: 5000
+  selector:
+    app: ${IMAGE_NAME}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ${IMAGE_NAME}
+  name: ${IMAGE_NAME}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${IMAGE_NAME}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: ${IMAGE_NAME}
+    spec:
+      containers:
+      - name: ${IMAGE_NAME}
+        image: gcr.io/PROJECT/IMAGE_NAME:IMAGE_TAG
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+EOF
+```
+
+### Create the Build Trigger
+
+Set up a build trigger to watch for changes.
+
+```shell
+cat <<EOF > build-trigger.json
+{
+  "triggerTemplate": {
+    "projectId": "${PROJECT}",
+    "repoName": "${IMAGE_NAME}",
+    "branchName": "master"
+  },
+  "description": "master",
+  "substitutions": {
+    "_CLOUDSDK_COMPUTE_ZONE": "${ZONE}",
+    "_CLOUDSDK_CONTAINER_CLUSTER": "${CLUSTER}"
+  },
+  "filename": "cloudbuild.yaml"
+}
+EOF
+
+curl -X POST \
+    https://cloudbuild.googleapis.com/v1/projects/${PROJECT}/triggers \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $(gcloud config config-helper --format='value(credential.access_token)')" \
+    --data-binary @build-trigger.json
+```
+
+Review Triggers here: <https://console.cloud.google.com/gcr/triggers>
+
+### Create the Build Specification cloudbuild.yaml
+
+```shell
 cat <<EOF > cloudbuild.yaml
 steps:
 
@@ -309,10 +396,10 @@ steps:
   - id: 'build'
     name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
-    args: 
+    args:
       - '-c'
       - |
-          docker build -t gcr.io/${PROJECT}/${IMAGE_NAME}:${SHORT_SHA} .
+          docker build -t gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} .
 
 ### Test
 
@@ -321,12 +408,10 @@ steps:
   - id: 'publish'
     name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
-    args: 
+    args:
       - '-c'
       - |
-          docker push gcr.io/${PROJECT}/${IMAGE_NAME}:${SHORT_SHA}
-
-EOF
+          docker push gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
 
 ### Deploy
   - id: 'deploy'
@@ -347,10 +432,10 @@ EOF
             --project "$${PROJECT}" \
             --zone "$${ZONE}"  
 
-          sed -i 's|gcr.io/cloud-solutions-images/gceme:.*|gcr.io/$PROJECT_ID/gceme:${SHORT_SHA}|' ./kubernetes/deployments/canary/*.yaml
+          sed -i 's|gcr.io/PROJECT/IMAGE_NAME:IMAGE_TAG|gcr.io/$PROJECT/$IMAGE_NAME:$IMAGE_TAG|' ./app-gcp.yml
 
-          kubectl apply --namespace production --recursive -f kubernetes/deployments/canary
-          kubectl apply --namespace production --recursive -f kubernetes/services
+          kubectl get ns troopers || kubectl create ns troopers
+          kubectl apply --namespace troopers -f app-gcp.yml
 EOF
 ```
 
@@ -358,92 +443,23 @@ gcloud builds submit --config cloudbuild.yaml .
 
 gcloud builds submit --tag gcr.io/${PROJECT}/${IMAGE_NAME}
 
-### Set up automated triggers in Cloud Build
-
-Set up a build trigger to watch for changes to any branches except master.
+## Trigger the Pipeline
 
 ```shell
-cat <<EOF > branch-build-trigger.json
-{
-  "triggerTemplate": {
-    "projectId": "${PROJECT}",
-    "repoName": "default",
-    "branchName": "[^(?!.*master)].*"
-  },
-  "description": "branch",
-  "substitutions": {
-    "_CLOUDSDK_COMPUTE_ZONE": "${ZONE}",
-    "_CLOUDSDK_CONTAINER_CLUSTER": "${CLUSTER}"
-  },
-  "filename": "builder/cloudbuild-dev.yaml"
-}
-EOF
-
-curl -X POST \
-    https://cloudbuild.googleapis.com/v1/projects/${PROJECT}/triggers \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $(gcloud config config-helper --format='value(credential.access_token)')" \
-    --data-binary @branch-build-trigger.json
+git add .
+git commit . -m "initial version"
+git push gcp master
 ```
 
-Set up a build trigger to watch for changes to only the master branch.
-
+Query the Load Balancer IP by
 ```shell
-cat <<EOF > master-build-trigger.json
-{
-  "triggerTemplate": {
-    "projectId": "${PROJECT}",
-    "repoName": "default",
-    "branchName": "master"
-  },
-  "description": "master",
-  "substitutions": {
-    "_CLOUDSDK_COMPUTE_ZONE": "${ZONE}",
-    "_CLOUDSDK_CONTAINER_CLUSTER": "${CLUSTER}"
-  },
-  "filename": "builder/cloudbuild-canary.yaml"
-}
-EOF
-
-curl -X POST \
-    https://cloudbuild.googleapis.com/v1/projects/${PROJECT}/triggers \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $(gcloud config config-helper --format='value(credential.access_token)')" \
-    --data-binary @master-build-trigger.json
+kubectl -n troopers get services
 ```
-
-Set up a build trigger to execute when a tag is pushed to the repository.
-
-```shell
-cat <<EOF > tag-build-trigger.json
-{
-  "triggerTemplate": {
-    "projectId": "${PROJECT}",
-    "repoName": "default",
-    "tagName": ".*"
-  },
-  "description": "tag",
-  "substitutions": {
-    "_CLOUDSDK_COMPUTE_ZONE": "${ZONE}",
-    "_CLOUDSDK_CONTAINER_CLUSTER": "${CLUSTER}"
-  },
-  "filename": "builder/cloudbuild-prod.yaml"
-}
-EOF
-
-curl -X POST \
-    https://cloudbuild.googleapis.com/v1/projects/${PROJECT}/triggers \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $(gcloud config config-helper --format='value(credential.access_token)')" \
-    --data-binary @tag-build-trigger.json
-```
-
-Review Triggers here_: <https://console.cloud.google.com/gcr/triggers>
-
 
 ## GKE
 
 TO delete a cluster:
+
 ```shell
 gcloud container clusters delete -q ${CLUSTER}
 ```
