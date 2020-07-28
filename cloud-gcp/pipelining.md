@@ -452,6 +452,7 @@ git push gcp master
 ```
 
 Query the Load Balancer IP by
+
 ```shell
 kubectl -n troopers get services
 ```
