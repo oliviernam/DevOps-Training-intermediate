@@ -229,6 +229,12 @@ Install Image Security
 helm install -n ${DSSC_NAMESPACE} --values overrides.yml deepsecurity-smartcheck https://github.com/deep-security/smartcheck-helm/archive/master.tar.gz
 ```
 
+To monitor how the deployments of Smart Check are getting available you can use the following watch command:
+
+```shell
+watch kubectl -n ${DSSC_NAMESPACE} get deployments
+```
+
 Wait for Image Security to be up and do the initial password change:
 
 ```shell
