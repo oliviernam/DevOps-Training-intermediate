@@ -382,28 +382,22 @@ resources:
 variables:
 
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: 'fb00eb43-dd76-480f-9b50-2e58dc0b295e'
+  dockerRegistryServiceConnection: '782fb958-53be-43c1-88aa-b7963403d2b2'
   imageRepository: 'mawinklertroopersdev'
   containerRegistry: 'troopersregistry.azurecr.io'
   dockerfilePath: '**/Dockerfile'
   tag: '$(Build.BuildId)'
-  imagePullSecret: 'troopersregistry12864389-auth'
-
-  cloudOne_imageSecurityHost: smartcheck-52-236-146-5.nip.io
-  cloudOne_imageSecurityUser: administrator
-  cloudOne_imageSecurityPassword: trendmicro
-  cloudOne_preScanUser: administrator
-  cloudOne_preScanPassword: trendmicro
+  imagePullSecret: 'troopersregistrye311-auth'
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
-  system.debug: true
+  
 
 stages:
-- stage: BuildScanPush
-  displayName: Build, Scan and Push stage
+- stage: Build
+  displayName: Build stage
   jobs:  
-  - job: BuildScanPush
+  - job: Build
     displayName: Build
     pool:
       vmImage: $(vmImageName)
@@ -411,13 +405,14 @@ stages:
     - task: Docker@2
       displayName: Build and push an image to container registry
       inputs:
-        command: buildAndPush
+        command: build
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
           
+    # Scan the Container Image using Cloud One Container Security
     - script: |
         openssl s_client -showcerts -connect $(cloudOne_imageSecurityHost):443 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > smcert.crt
         sudo cp smcert.crt /usr/local/share/ca-certificates/$(cloudOne_imageSecurityHost).crt
@@ -435,32 +430,32 @@ stages:
         --smartcheck-password=$(cloudOne_imageSecurityPassword) \
         --insecure-skip-tls-verify \
         --insecure-skip-registry-tls-verify \
-        --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 0 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
+        --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
       displayName: "Cloud One Container Security Scan"
+      
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        command: push
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
 
     - upload: manifests
       artifact: manifests
 
-    #- task: Docker@2
-    #  displayName: Build and push an image to container registry
-    #  inputs:
-    #    command: push
-    #    repository: $(imageRepository)
-    #    dockerfile: $(dockerfilePath)
-    #    containerRegistry: $(dockerRegistryServiceConnection)
-    #    tags: |
-    #      $(tag)
-
 - stage: Deploy
   displayName: Deploy stage
-  dependsOn: BuildScanPush
+  dependsOn: Build
 
   jobs:
   - deployment: Deploy
     displayName: Deploy
     pool:
       vmImage: $(vmImageName)
-    environment: 'mawinklertroopersdev.troopers'
+    environment: 'mawinklertroopersdev.default'
     strategy:
       runOnce:
         deploy:
