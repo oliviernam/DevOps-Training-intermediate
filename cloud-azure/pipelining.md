@@ -49,8 +49,6 @@ az acr create --resource-group troopers --name troopersRegistry --sku Basic
 
 ### Create a Kubernetes cluster
 
-TODO: name, node-count
-
 ```shell
 az aks create \
     --resource-group troopers \
@@ -106,20 +104,6 @@ Create CloudOne Image Security namespace
 
 ```shell
 kubectl create namespace ${DSSC_NAMESPACE}
-```
-
-Create certificate request for load balancer certificate:
-
-```shell
-cat <<EOF>./req.conf
-[req]
-  distinguished_name=req
-[san]
-  subjectAltName=DNS:*.smartcheck.com
-EOF
-
-openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout k8s.key -out k8s.crt -subj "/CN=*.smartcheck.com" -extensions san -config req.conf
-kubectl create secret tls k8s-certificate --cert=k8s.crt --key=k8s.key --dry-run=true -n ${DSSC_NAMESPACE} -o yaml | kubectl apply -f -
 ```
 
 Create overrides for Image Security:
@@ -232,6 +216,8 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout k8s.key -ou
 kubectl create secret tls k8s-certificate --cert=k8s.crt --key=k8s.key --dry-run=true -n ${DSSC_NAMESPACE} -o yaml | kubectl apply -f -
 ```
 
+And finally enable the registry within Smart Check.
+
 ```shell
 helm upgrade --namespace ${DSSC_NAMESPACE} --values overrides-image-security-upgrade.yml deepsecurity-smartcheck https://github.com/deep-security/smartcheck-helm/archive/master.tar.gz --reuse-values
 ```
@@ -304,9 +290,19 @@ cloudOne_preScanUser: administrator
 cloudOne_preScanPassword: trendmicro
 ```
 
-Just after the `buildAndPush`-task paste the following task to your pipeline.
+Split the `buildAndPush`-task in a build and a push task, insert the scan task in the middle. It should look like the below code fragment.s
 
 ```yaml
+    - task: Docker@2
+      displayName: Build an image
+      inputs:
+        command: build
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+          
     # Scan the Container Image using Cloud One Container Security
     - script: |
         openssl s_client -showcerts -connect $(cloudOne_imageSecurityHost):443 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > smcert.crt
@@ -325,8 +321,18 @@ Just after the `buildAndPush`-task paste the following task to your pipeline.
         --smartcheck-password=$(cloudOne_imageSecurityPassword) \
         --insecure-skip-tls-verify \
         --insecure-skip-registry-tls-verify \
-        --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 0 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
-      displayName: "Cloud One Container Security Scan"
+        --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
+      displayName: "Scan an image"
+      
+    - task: Docker@2
+      displayName: Push an image
+      inputs:
+        command: push
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
 ```
 
 ## Clean up resources
@@ -392,7 +398,6 @@ variables:
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
   
-
 stages:
 - stage: Build
   displayName: Build stage
@@ -403,7 +408,7 @@ stages:
       vmImage: $(vmImageName)
     steps:
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName: Build an image
       inputs:
         command: build
         repository: $(imageRepository)
@@ -431,10 +436,10 @@ stages:
         --insecure-skip-tls-verify \
         --insecure-skip-registry-tls-verify \
         --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
-      displayName: "Cloud One Container Security Scan"
+      displayName: "Scan an image"
       
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName: Push an image
       inputs:
         command: push
         repository: $(imageRepository)
