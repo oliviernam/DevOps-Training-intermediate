@@ -36,37 +36,7 @@ Run the following command in Cloud Shell to confirm that you are authenticated:
 gcloud auth list
 ```
 
-Command output:
-
-```code
- Credentialed Accounts
-ACTIVE  ACCOUNT
-*       <my_account>@<my_domain.com>
-
-To set the active account, run:
-    $ gcloud config set account `ACCOUNT`
-```
-
 Note: The gcloud command-line tool is the powerful and unified command-line tool in Google Cloud. It comes preinstalled in Cloud Shell. You will notice its support for tab completion. For more information, see gcloud command-line tool overview.
-
-```shell
-gcloud config list project
-```
-
-Command output
-
-```code
-[core]
-project = <PROJECT_ID>
-
-Your active configuration is: [cloudshell-XXXXX]
-```
-
-If it is not, you can set it with this command:
-
-```shell
-gcloud config set project <PROJECT_ID>
-```
 
 ## Prepare for GKE Cluster
 
@@ -123,9 +93,13 @@ Give Cloud Build rights to your cluster.
 export PROJECT_NUMBER="$(gcloud projects describe \
     $(gcloud config get-value core/project -q) --format='get(projectNumber)')"
 
+#gcloud projects add-iam-policy-binding ${PROJECT} \
+#    --member=serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com \
+#    --role=roles/container.developer
+
 gcloud projects add-iam-policy-binding ${PROJECT} \
     --member=serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com \
-    --role=roles/container.developer
+    --role=roles/owner
 ```
 
 Your environment is ready!
@@ -268,7 +242,12 @@ cat <<EOF > build-trigger.json
   "description": "master",
   "substitutions": {
     "_CLOUDSDK_COMPUTE_ZONE": "${ZONE}",
-    "_CLOUDSDK_CONTAINER_CLUSTER": "${CLUSTER}"
+    "_CLOUDSDK_CONTAINER_CLUSTER": "${CLUSTER}",
+    "_CLOUDONE_IMAGESECURITY_HOST": "smartcheck-${DSSC_HOST//./-}.nip.io",
+    "_CLOUDONE_IMAGESECURITY_USER": "${DSSC_USERNAME}",
+    "_CLOUDONE_IMAGESECURITY_PASSWORD": "${DSSC_PASSWORD}",
+    "_CLOUDONE_PRESCAN_USER": "${DSSC_REGUSER}",
+    "_CLOUDONE_PRESCAN_PASSWORD": "${DSSC_REGPASSWORD}"
   },
   "filename": "cloudbuild.yaml"
 }
@@ -299,8 +278,37 @@ steps:
       - |
           docker build -t gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} .
 
-### Test
+### Scan
 
+  - id: 'scan'
+    name: 'gcr.io/cloud-builders/docker'
+    env:
+      - 'CLOUDONE_IMAGESECURITY_HOST=${_CLOUDONE_IMAGESECURITY_HOST}'
+      - 'CLOUDONE_IMAGESECURITY_USER=${_CLOUDONE_IMAGESECURITY_USER}'
+      - 'CLOUDONE_IMAGESECURITY_PASSWORD=${_CLOUDONE_IMAGESECURITY_PASSWORD}'
+      - 'CLOUDONE_PRESCAN_USER=${_CLOUDONE_PRESCAN_USER}'
+      - 'CLOUDONE_PRESCAN_PASSWORD=${_CLOUDONE_PRESCAN_PASSWORD}'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+          openssl s_client -showcerts -connect ${CLOUDONE_IMAGESECURITY_HOST}:443 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > smcert.crt
+          sudo cp smcert.crt /usr/local/share/ca-certificates/${CLOUDONE_IMAGESECURITY_HOST}.crt
+          sudo mkdir -p /etc/docker/certs.d/${CLOUDONE_IMAGESECURITY_HOST}:5000
+          sudo cp smcert.crt /etc/docker/certs.d/${CLOUDONE_IMAGESECURITY_HOST}:5000/ca.crt
+          sudo update-ca-certificates
+
+          docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ deepsecurity/smartcheck-scan-action \
+          --preregistry-scan \
+          --preregistry-password=${CLOUDONE_PRESCAN_PASSWORD} \
+          --preregistry-user=${CLOUDONE_PRESCAN_USER} \
+          --image-name=gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} \
+          --smartcheck-host=${CLOUDONE_IMAGESECURITY_HOST} \
+          --smartcheck-user=${CLOUDONE_IMAGESECURITY_USER} \
+          --smartcheck-password=${CLOUDONE_IMAGESECURITY_PASSWORD} \
+          --insecure-skip-tls-verify \
+          --insecure-skip-registry-tls-verify \
+          --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
 
 ### Publish
   - id: 'publish'
