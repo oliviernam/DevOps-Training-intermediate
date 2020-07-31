@@ -133,7 +133,7 @@ helm upgrade --namespace ${DSSC_NAMESPACE} \
   --reuse-values
 
 printf '%s \n' "--------------"
-printf '%s \n' "     URL     : https://${DSSC_HOST}"
+printf '%s \n' "     URL     : https://smartcheck-${DSSC_HOST//./-}.nip.io"
 printf '%s \n' "     User    : ${DSSC_USERNAME}"
 printf '%s \n' "     Password: ${DSSC_PASSWORD}"
 printf '%s \n' "--------------"
