@@ -13,6 +13,8 @@
     - [Create Kubernetes Deployment and Service Definition](#create-kubernetes-deployment-and-service-definition)
     - [Create the Build Trigger](#create-the-build-trigger)
     - [Create the Build Specification cloudbuild.yaml](#create-the-build-specification-cloudbuildyaml)
+    - [Manually trigger the pipeline](#manually-trigger-the-pipeline)
+    - [Manually build and push](#manually-build-and-push)
   - [Trigger the Pipeline](#trigger-the-pipeline)
   - [GKE](#gke)
 
@@ -74,6 +76,30 @@ gcloud services enable container.googleapis.com \
     containerregistry.googleapis.com \
     cloudbuild.googleapis.com \
     sourcerepo.googleapis.com
+```
+
+If you're working with a new project, you likely need to enable billing and afterwards the compute API within our project. For that, we first need to look up available billing accounts.
+
+```shell
+gcloud alpha billing accounts list
+```
+
+```shell
+ACCOUNT_ID            NAME                 OPEN  MASTER_ACCOUNT_ID
+019XXX-6XXXX9-4XXXX1  My Billing Account   True
+```
+
+We now link that billing account to our project.
+
+```shell
+gcloud alpha billing projects link <project id> \
+  --billing-account 019XXX-6XXXX9-4XXXX1
+```
+
+And finally enable the API.
+
+```shell
+gcloud services enable compute.googleapis.com
 ```
 
 ## Create GKE Cluster
@@ -179,7 +205,7 @@ The repository can be accessed via
 ```shell
 export IMAGE_NAME=troopers
 export IMAGE_TAG=latest
-cat <<EOF > app-gcp.json
+cat <<EOF > app-gcp.yml
 apiVersion: v1
 kind: Service
 metadata:
@@ -345,9 +371,22 @@ steps:
 EOF
 ```
 
+### Manually trigger the pipeline
+
+```shell
+# by config
 gcloud builds submit --config cloudbuild.yaml .
 
+# by trigger
+gcloud alpha builds triggers run master --branch=master
+```
+
+### Manually build and push
+
+```shell
+# by tag
 gcloud builds submit --tag gcr.io/${PROJECT}/${IMAGE_NAME}
+```
 
 ## Trigger the Pipeline
 
