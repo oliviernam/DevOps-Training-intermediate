@@ -1,11 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
-
 # This script is meant for quick & easy install via:
-#   'curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | sh'
+#   'curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | bash'
 # or:
-#   'wget -qO- https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | sh'
+#   'wget -qO- https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | bash'
 
 kubectl create namespace ${DSSC_NAMESPACE} --dry-run=true -o yaml | kubectl apply -f -
 
@@ -61,9 +60,80 @@ certificate:
     privateKey: tls.key
 EOF
 
-if [ $(helm --namespace ${DSSC_NAMESPACE} list -q) == "deepsecurity-smartcheck" ] ;
+if [ "$(helm --namespace ${DSSC_NAMESPACE} list -q | grep deep)" != "" ] ;
   then
-    echo Installed
+    helm upgrade --namespace ${DSSC_NAMESPACE} \
+      --values overrides-image-security.yml \
+      deepsecurity-smartcheck \
+      https://github.com/deep-security/smartcheck-helm/archive/master.tar.gz \
+      --reuse-values
   else
-    echo Not Installed
+    helm install --namespace ${DSSC_NAMESPACE} \
+      --values overrides-image-security.yml \
+      deepsecurity-smartcheck \
+      https://github.com/deep-security/smartcheck-helm/archive/master.tar.gz
 fi
+
+DSSC_HOST=''
+while [ "$DSSC_HOST" == '' ]
+do
+  export DSSC_HOST=`kubectl get svc -n ${DSSC_NAMESPACE} proxy \
+                      -o jsonpath='{.status.loadBalancer.ingress[0].ip}'`
+  sleep 10
+done
+
+DSSC_BEARERTOKEN=''
+while [ "$DSSC_BEARERTOKEN" == '' ]
+do
+  sleep 10
+  DSSC_USERID=`curl -s -k -X POST https://${DSSC_HOST}/api/sessions \
+                 -H "Content-Type: application/json" \
+                 -H "Api-Version: 2018-05-01" \
+                 -H "cache-control: no-cache" \
+                 -d "{\"user\":{\"userid\":\"${DSSC_USERNAME}\",\"password\":\"${DSSC_TEMPPW}\"}}" | \
+                     jq '.user.id' | tr -d '"'  2>/dev/null`
+  DSSC_BEARERTOKEN=`curl -s -k -X POST https://${DSSC_HOST}/api/sessions \
+                 -H "Content-Type: application/json" \
+                 -H "Api-Version: 2018-05-01" \
+                 -H "cache-control: no-cache" \
+                 -d "{\"user\":{\"userid\":\"${DSSC_USERNAME}\",\"password\":\"${DSSC_TEMPPW}\"}}" | \
+                    jq '.token' | tr -d '"'  2>/dev/null`
+  printf '%s' "."
+done
+
+printf '%s \n' " "
+DUMMY=`curl -s -k -X POST https://${DSSC_HOST}/api/users/${DSSC_USERID}/password \
+         -H "Content-Type: application/json" \
+         -H "Api-Version: 2018-05-01" \
+         -H "cache-control: no-cache" \
+         -H "authorization: Bearer ${DSSC_BEARERTOKEN}" \
+         -d "{  \"oldPassword\": \"${DSSC_TEMPPW}\", \"newPassword\": \"${DSSC_PASSWORD}\"  }"`
+
+printf '%s \n' "export DSSC_HOST=${DSSC_HOST}" > cloudOneCredentials.txt
+printf '%s \n' "export DSSC_USERNAME=${DSSC_USERNAME}" >> cloudOneCredentials.txt
+printf '%s \n' "export DSSC_PASSWORD=${DSSC_PASSWORD}" >> cloudOneCredentials.txt
+
+cat <<EOF>./req.conf
+[req]
+  distinguished_name=req
+[san]
+  subjectAltName=DNS:smartcheck-${DSSC_HOST//./-}.nip.io
+EOF
+
+openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes \
+  -keyout k8s.key -out k8s.crt \
+  -subj "/CN=smartcheck-${DSSC_HOST//./-}.nip.io" -extensions san -config req.conf
+kubectl create secret tls k8s-certificate --cert=k8s.crt --key=k8s.key \
+  --dry-run=true -n ${DSSC_NAMESPACE} -o yaml | kubectl apply -f -
+
+helm upgrade --namespace ${DSSC_NAMESPACE} \
+  --values overrides-image-security-upgrade.yml \
+  deepsecurity-smartcheck \
+  https://github.com/deep-security/smartcheck-helm/archive/master.tar.gz \
+  --reuse-values
+
+printf '%s \n' "--------------"
+printf '%s \n' "     URL     : https://${DSSC_HOST}"
+printf '%s \n' "     User    : ${DSSC_USERNAME}"
+printf '%s \n' "     Password: ${DSSC_PASSWORD}"
+printf '%s \n' "--------------"

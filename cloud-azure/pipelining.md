@@ -27,7 +27,7 @@
 
 ## Get the code
 
-Fork the following repository containing a sample application and a Dockerfile:
+Fork the following repository containing a sample application and a Dockerfile to your GitHub account:
 
 <https://github.com/mawinkler/troopers>
 
@@ -99,6 +99,14 @@ Set the activation code for Smart Check
 ```shell
 export DSSC_AC=<activation code>
 ```
+
+Finally, run
+
+```shell
+curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | bash
+```
+
+REMOVE THE REST
 
 Create CloudOne Image Security namespace
 
@@ -266,7 +274,7 @@ Corret apiVersion to
 
 ```yaml
 apiVersion : apps/v1
-´´´
+```
 
 Add the selector within the DeploymentSpec
 
