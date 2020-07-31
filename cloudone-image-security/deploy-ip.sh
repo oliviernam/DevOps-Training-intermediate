@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e
 
 # This script is meant for quick & easy install via:
-#   'curl -sSL https://get.docker.com/ | sh'
+#   'curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | sh'
 # or:
-#   'wget -qO- https://get.docker.com/ | sh'
+#   'wget -qO- https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | sh'
 
 kubectl create namespace ${DSSC_NAMESPACE} --dry-run=true -o yaml | kubectl apply -f -
 
