@@ -290,8 +290,9 @@ Review Triggers here: <https://console.cloud.google.com/gcr/triggers>
 
 ### Create the Build Specification cloudbuild.yaml
 
-```shell
-cat <<EOF > cloudbuild.yaml
+Create a file `cloudbuild.yaml` and copy and paste the following content
+
+```yaml
 steps:
 
 ### Build
@@ -368,7 +369,6 @@ steps:
 
           kubectl get ns troopers || kubectl create ns troopers
           kubectl apply --namespace troopers -f app-gcp.yml
-EOF
 ```
 
 ### Manually trigger the pipeline
