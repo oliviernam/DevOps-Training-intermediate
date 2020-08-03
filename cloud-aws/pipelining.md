@@ -1,6 +1,7 @@
 # CI/CD with AWS CodePipeline
 
 - [CI/CD with AWS CodePipeline](#cicd-with-aws-codepipeline)
+  - [TODO](#todo)
   - [Create a Workspace](#create-a-workspace)
     - [Install Kubernetes tools](#install-kubernetes-tools)
     - [Create an IAM Role for the Workspace](#create-an-iam-role-for-the-workspace)
@@ -22,6 +23,10 @@
     - [CodePipeline Setup](#codepipeline-setup)
   - [CodePipeline CloudFormation *ci-cd-codepipeline.cfn.yml:*](#codepipeline-cloudformation-ci-cd-codepipelinecfnyml)
   - [*BuildSpec.yml*](#buildspecyml)
+
+## TODO
+
+- Integrate Application Security to the Lab
 
 ## Create a Workspace
 

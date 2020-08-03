@@ -1,6 +1,7 @@
 # CI/CD with Azure Pipelines
 
 - [CI/CD with Azure Pipelines](#cicd-with-azure-pipelines)
+  - [TODO](#todo)
   - [Prerequisites](#prerequisites)
   - [Get the code](#get-the-code)
   - [Create the Azure resources](#create-the-azure-resources)
@@ -16,6 +17,10 @@
   - [Clean up resources](#clean-up-resources)
   - [Learn more](#learn-more)
   - [Azure Commands](#azure-commands)
+
+## TODO
+
+- Integrate Application Security to the Lab
 
 ## Prerequisites
 
