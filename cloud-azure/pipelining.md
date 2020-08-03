@@ -82,7 +82,6 @@ kubectl get nodes
 NAME                       STATUS   ROLES   AGE   VERSION
 aks-nodepool1-30577774-vmss000000   Ready    agent   39m   v1.16.10
 aks-nodepool1-30577774-vmss000001   Ready    agent   39m   v1.16.10
-aks-nodepool1-30577774-vmss000002   Ready    agent   39m   v1.16.10
 ```
 
 ## Deploy CloudOne Image Security
@@ -193,10 +192,11 @@ Split the `buildAndPush`-task in a build and a push task, insert the scan task i
 
     # Scan the Container Image using Cloud One Container Security
     - script: |
-        openssl s_client -showcerts -connect $(cloudOne_imageSecurityHost):443 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > smcert.crt
-        sudo cp smcert.crt /usr/local/share/ca-certificates/$(cloudOne_imageSecurityHost).crt
-        sudo mkdir -p /etc/docker/certs.d/$(cloudOne_imageSecurityHost):5000
-        sudo cp smcert.crt /etc/docker/certs.d/$(cloudOne_imageSecurityHost):5000/ca.crt
+        openssl s_client -showcerts -connect $(cloudOne_imageSecurityHost):443 < /dev/null | \
+          sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/$(cloudOne_imageSecurityHost).crt
+        # sudo cp smcert.crt /usr/local/share/ca-certificates/$(cloudOne_imageSecurityHost).crt
+        # sudo mkdir -p /etc/docker/certs.d/$(cloudOne_imageSecurityHost):5000
+        # sudo cp smcert.crt /etc/docker/certs.d/$(cloudOne_imageSecurityHost):5000/ca.crt
         sudo update-ca-certificates
 
         docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ deepsecurity/smartcheck-scan-action \
