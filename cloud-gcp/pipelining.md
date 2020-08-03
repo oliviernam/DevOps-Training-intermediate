@@ -1,9 +1,10 @@
 # CI/CD with GCP Cloud Build
 
 - [CI/CD with GCP Cloud Build](#cicd-with-gcp-cloud-build)
+  - [TODO](#todo)
   - [Prerequisites](#prerequisites)
   - [Create a Workspace](#create-a-workspace)
-  - [Prepare for GKE Cluster](#prepare-for-gke-cluster)
+  - [Prepare for our GKE Cluster](#prepare-for-our-gke-cluster)
   - [Create GKE Cluster](#create-gke-cluster)
   - [Deploy CloudOne Image Security](#deploy-cloudone-image-security)
   - [Create Repository to Host the App Code](#create-repository-to-host-the-app-code)
@@ -16,7 +17,14 @@
     - [Manually trigger the pipeline](#manually-trigger-the-pipeline)
     - [Manually build and push](#manually-build-and-push)
   - [Trigger the Pipeline](#trigger-the-pipeline)
-  - [GKE](#gke)
+  - [Knowledge](#knowledge)
+    - [Cloud Builders](#cloud-builders)
+    - [Delete a cluster:](#delete-a-cluster)
+    - [Troubleshoot Google Cloud Build](#troubleshoot-google-cloud-build)
+
+## TODO
+
+- Integrate Application Security to the Lab
 
 ## Prerequisites
 
@@ -40,7 +48,7 @@ gcloud auth list
 
 Note: The gcloud command-line tool is the powerful and unified command-line tool in Google Cloud. It comes preinstalled in Cloud Shell. You will notice its support for tab completion. For more information, see gcloud command-line tool overview.
 
-## Prepare for GKE Cluster
+## Prepare for our GKE Cluster
 
 Set up some variables.
 
@@ -92,7 +100,7 @@ ACCOUNT_ID            NAME                 OPEN  MASTER_ACCOUNT_ID
 We now link that billing account to our project.
 
 ```shell
-gcloud alpha billing projects link <project id> \
+gcloud alpha billing projects link $PROJECT \
   --billing-account 019XXX-6XXXX9-4XXXX1
 ```
 
@@ -119,13 +127,13 @@ Give Cloud Build rights to your cluster.
 export PROJECT_NUMBER="$(gcloud projects describe \
     $(gcloud config get-value core/project -q) --format='get(projectNumber)')"
 
-#gcloud projects add-iam-policy-binding ${PROJECT} \
-#    --member=serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com \
-#    --role=roles/container.developer
-
 gcloud projects add-iam-policy-binding ${PROJECT} \
     --member=serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com \
-    --role=roles/owner
+    --role=roles/container.developer
+
+# gcloud projects add-iam-policy-binding ${PROJECT} \
+#     --member=serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com \
+#     --role=roles/owner
 ```
 
 Your environment is ready!
@@ -153,6 +161,10 @@ Finally, run
 
 ```shell
 curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | bash
+```
+or
+```shell
+curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-ip.sh | bash
 ```
 
 ## Create Repository to Host the App Code
@@ -292,7 +304,8 @@ Review Triggers here: <https://console.cloud.google.com/gcr/triggers>
 
 Create a file `cloudbuild.yaml` and copy and paste the following content
 
-```yaml
+```shell
+cat <<EOF > cloudbuild.yaml
 steps:
 
 ### Build
@@ -310,29 +323,29 @@ steps:
   - id: 'scan'
     name: 'gcr.io/cloud-builders/docker'
     env:
-      - 'CLOUDONE_IMAGESECURITY_HOST=${_CLOUDONE_IMAGESECURITY_HOST}'
-      - 'CLOUDONE_IMAGESECURITY_USER=${_CLOUDONE_IMAGESECURITY_USER}'
-      - 'CLOUDONE_IMAGESECURITY_PASSWORD=${_CLOUDONE_IMAGESECURITY_PASSWORD}'
-      - 'CLOUDONE_PRESCAN_USER=${_CLOUDONE_PRESCAN_USER}'
-      - 'CLOUDONE_PRESCAN_PASSWORD=${_CLOUDONE_PRESCAN_PASSWORD}'
+      - 'CLOUDONE_IMAGESECURITY_HOST=\${_CLOUDONE_IMAGESECURITY_HOST}'
+      - 'CLOUDONE_IMAGESECURITY_USER=\${_CLOUDONE_IMAGESECURITY_USER}'
+      - 'CLOUDONE_IMAGESECURITY_PASSWORD=\${_CLOUDONE_IMAGESECURITY_PASSWORD}'
+      - 'CLOUDONE_PRESCAN_USER=\${_CLOUDONE_PRESCAN_USER}'
+      - 'CLOUDONE_PRESCAN_PASSWORD=\${_CLOUDONE_PRESCAN_PASSWORD}'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-          openssl s_client -showcerts -connect ${CLOUDONE_IMAGESECURITY_HOST}:443 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > smcert.crt
-          sudo cp smcert.crt /usr/local/share/ca-certificates/${CLOUDONE_IMAGESECURITY_HOST}.crt
-          sudo mkdir -p /etc/docker/certs.d/${CLOUDONE_IMAGESECURITY_HOST}:5000
-          sudo cp smcert.crt /etc/docker/certs.d/${CLOUDONE_IMAGESECURITY_HOST}:5000/ca.crt
+          openssl s_client -showcerts -connect \$\${CLOUDONE_IMAGESECURITY_HOST}:443 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > smcert.crt
+          sudo cp smcert.crt /usr/local/share/ca-certificates/\$\${CLOUDONE_IMAGESECURITY_HOST}.crt
+          sudo mkdir -p /etc/docker/certs.d/\$\${CLOUDONE_IMAGESECURITY_HOST}:5000
+          sudo cp smcert.crt /etc/docker/certs.d/\$\${CLOUDONE_IMAGESECURITY_HOST}:5000/ca.crt
           sudo update-ca-certificates
 
           docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ deepsecurity/smartcheck-scan-action \
           --preregistry-scan \
-          --preregistry-password=${CLOUDONE_PRESCAN_PASSWORD} \
-          --preregistry-user=${CLOUDONE_PRESCAN_USER} \
+          --preregistry-password=\$\${CLOUDONE_PRESCAN_PASSWORD} \
+          --preregistry-user=\$\${CLOUDONE_PRESCAN_USER} \
           --image-name=gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} \
-          --smartcheck-host=${CLOUDONE_IMAGESECURITY_HOST} \
-          --smartcheck-user=${CLOUDONE_IMAGESECURITY_USER} \
-          --smartcheck-password=${CLOUDONE_IMAGESECURITY_PASSWORD} \
+          --smartcheck-host=\$\${CLOUDONE_IMAGESECURITY_HOST} \
+          --smartcheck-user=\$\${CLOUDONE_IMAGESECURITY_USER} \
+          --smartcheck-password=\$\${CLOUDONE_IMAGESECURITY_PASSWORD} \
           --insecure-skip-tls-verify \
           --insecure-skip-registry-tls-verify \
           --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
@@ -350,25 +363,26 @@ steps:
   - id: 'deploy'
     name: 'gcr.io/cloud-builders/gcloud'
     env:
-      - 'CLOUDSDK_COMPUTE_ZONE=${_CLOUDSDK_COMPUTE_ZONE}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLOUDSDK_CONTAINER_CLUSTER}'
+      - 'CLOUDSDK_COMPUTE_ZONE=\${_CLOUDSDK_COMPUTE_ZONE}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=\${_CLOUDSDK_CONTAINER_CLUSTER}'
       - 'KUBECONFIG=/kube/config'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-          CLUSTER=$$(gcloud config get-value container/cluster)
-          PROJECT=$$(gcloud config get-value core/project)
-          ZONE=$$(gcloud config get-value compute/zone)
+          CLUSTER=\$\$(gcloud config get-value container/cluster)
+          PROJECT=\$\$(gcloud config get-value core/project)
+          ZONE=\$\$(gcloud config get-value compute/zone)
 
-          gcloud container clusters get-credentials "$${CLUSTER}" \
-            --project "$${PROJECT}" \
-            --zone "$${ZONE}"  
+          gcloud container clusters get-credentials "$\${CLUSTER}" \
+            --project "\$\${PROJECT}" \
+            --zone "\$\${ZONE}"  
 
           sed -i 's|gcr.io/PROJECT/IMAGE_NAME:IMAGE_TAG|gcr.io/$PROJECT/$IMAGE_NAME:$IMAGE_TAG|' ./app-gcp.yml
 
-          kubectl get ns troopers || kubectl create ns troopers
-          kubectl apply --namespace troopers -f app-gcp.yml
+          kubectl get ns $IMAGE_NAME || kubectl create ns $IMAGE_NAME
+          kubectl apply --namespace $IMAGE_NAME -f app-gcp.yml
+EOF
 ```
 
 ### Manually trigger the pipeline
@@ -402,10 +416,39 @@ Query the Load Balancer IP by
 kubectl -n troopers get services
 ```
 
-## GKE
+## Knowledge
 
-TO delete a cluster:
+### Cloud Builders
+
+Cloud builders are container images with common languages and tools installed in them. You can configure Cloud Build to run a specific command within the context of these builders.
+
+This page describes the types of builders that you can use with Cloud Build.
+
+<https://cloud.google.com/cloud-build/docs/cloud-builders>
+
+### Delete a cluster:
 
 ```shell
 gcloud container clusters delete -q ${CLUSTER}
+```
+
+### Troubleshoot Google Cloud Build
+
+Use debugging - To get additional information during the build process you can set the verbosity to debug:
+
+```yaml
+steps:
+- name: 'gcr.io/cloud-builders/npm'
+  args: ['install']
+- name: "gcr.io/cloud-builders/gcloud"
+  args: ['app', 'deploy', 'app.yaml', '--verbosity', 'debug']
+```
+
+Use cloud-build-local - It is possible to run the exact same build process which runs in Cloud Build on your local machine. Please keep in mind Docker is required.
+
+```shell
+cloud-build-local \
+  --config=cloud-build/cloudbuild.yaml \
+  --dryrun=false \
+  --push .
 ```
