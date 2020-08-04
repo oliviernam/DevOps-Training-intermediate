@@ -22,6 +22,9 @@
     - [Delete a cluster:](#delete-a-cluster)
     - [Troubleshoot Google Cloud Build](#troubleshoot-google-cloud-build)
   - [Pipelines](#pipelines)
+    - [Var 1](#var-1)
+    - [Var 2](#var-2)
+    - [Var 3](#var-3)
 
 ## TODO
 
@@ -163,7 +166,9 @@ Finally, run
 ```shell
 curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | bash
 ```
+
 or
+
 ```shell
 curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-ip.sh | bash
 ```
@@ -456,6 +461,8 @@ cloud-build-local \
 
 ## Pipelines
 
+### Var 1
+
 ```yaml
 steps:
 
@@ -526,4 +533,80 @@ steps:
 
           kubectl get ns c1-app-sec-uploader || kubectl create ns c1-app-sec-uploader
           kubectl apply --namespace c1-app-sec-uploader -f app-gcp.yml
+```
+
+### Var 2
+
+```yaml
+  - id: 'scan'
+    # name: 'gcr.io/cloud-builders/docker'
+    name: 'deepsecurity/smartcheck-scan-action'
+    env:
+      - 'CLOUDONE_IMAGESECURITY_HOST=${_CLOUDONE_IMAGESECURITY_HOST}'
+      - 'CLOUDONE_IMAGESECURITY_USER=${_CLOUDONE_IMAGESECURITY_USER}'
+      - 'CLOUDONE_IMAGESECURITY_PASSWORD=${_CLOUDONE_IMAGESECURITY_PASSWORD}'
+      - 'CLOUDONE_PRESCAN_USER=${_CLOUDONE_PRESCAN_USER}'
+      - 'CLOUDONE_PRESCAN_PASSWORD=${_CLOUDONE_PRESCAN_PASSWORD}'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+          openssl s_client -showcerts -connect $${CLOUDONE_IMAGESECURITY_HOST}:443 < /dev/null | \
+            sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/$${CLOUDONE_IMAGESECURITY_HOST}.crt
+          update-ca-certificates
+          
+          node /app/dist/index.js --preregistry-scan \
+            --preregistry-password=$${CLOUDONE_PRESCAN_PASSWORD} \
+            --preregistry-user=$${CLOUDONE_PRESCAN_USER} \
+            --image-name=gcr.io/devtest-285306/c1-app-sec-uploader:latest \
+            --smartcheck-host=$${CLOUDONE_IMAGESECURITY_HOST} \
+            --smartcheck-user=$${CLOUDONE_IMAGESECURITY_USER} \
+            --smartcheck-password=$${CLOUDONE_IMAGESECURITY_PASSWORD} \
+            --insecure-skip-tls-verify \
+            --insecure-skip-registry-tls-verify \
+            --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
+```
+
+### Var 3
+
+```yaml
+  - id: 'scan'
+    # name: 'gcr.io/cloud-builders/docker'
+    name: 'deepsecurity/smartcheck-scan-action'
+    env:
+      - 'CLOUDONE_IMAGESECURITY_HOST=${_CLOUDONE_IMAGESECURITY_HOST}'
+      - 'CLOUDONE_IMAGESECURITY_USER=${_CLOUDONE_IMAGESECURITY_USER}'
+      - 'CLOUDONE_IMAGESECURITY_PASSWORD=${_CLOUDONE_IMAGESECURITY_PASSWORD}'
+      - 'CLOUDONE_PRESCAN_USER=${_CLOUDONE_PRESCAN_USER}'
+      - 'CLOUDONE_PRESCAN_PASSWORD=${_CLOUDONE_PRESCAN_PASSWORD}'
+      - 'SSL_CERT_FILE=/usr/local/share/ca-certificates/${_CLOUDONE_IMAGESECURITY_HOST}.crt'
+      - 'NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/${_CLOUDONE_IMAGESECURITY_HOST}.crt'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+          apk update
+          apk add ca-certificates openssl
+
+          mkdir -p /usr/local/share/ca-certificates
+          openssl s_client -showcerts -connect $${CLOUDONE_IMAGESECURITY_HOST}:443 < /dev/null | \
+            sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/$${CLOUDONE_IMAGESECURITY_HOST}.crt
+          update-ca-certificates
+          
+          npm config set cafile /usr/local/share/ca-certificates/$${CLOUDONE_IMAGESECURITY_HOST}.crt
+
+          echo $${NODE_EXTRA_CA_CERTS}
+
+          node /app/dist/index.js \
+            --use-openssl-ca \
+            --preregistry-scan \
+            --preregistry-password=$${CLOUDONE_PRESCAN_PASSWORD} \
+            --preregistry-user=$${CLOUDONE_PRESCAN_USER} \
+            --image-name=gcr.io/devtest-285306/c1-app-sec-uploader:latest \
+            --smartcheck-host=$${CLOUDONE_IMAGESECURITY_HOST} \
+            --smartcheck-user=$${CLOUDONE_IMAGESECURITY_USER} \
+            --smartcheck-password=$${CLOUDONE_IMAGESECURITY_PASSWORD} \
+            --insecure-skip-tls-verify \
+            --insecure-skip-registry-tls-verify \
+            --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
 ```

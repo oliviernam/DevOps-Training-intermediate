@@ -199,7 +199,7 @@ Split the `buildAndPush`-task in a build and a push task, insert the scan task i
         # sudo cp smcert.crt /etc/docker/certs.d/$(cloudOne_imageSecurityHost):5000/ca.crt
         sudo update-ca-certificates
 
-        docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ deepsecurity/smartcheck-scan-action \
+        docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME:/root/.cache/ deepsecurity/smartcheck-scan-action \
         --preregistry-scan \
         --preregistry-password=$(cloudOne_preScanPassword) \
         --preregistry-user=$(cloudOne_preScanUser) \
