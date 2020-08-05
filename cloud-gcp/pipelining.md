@@ -344,7 +344,7 @@ steps:
           sudo cp smcert.crt /etc/docker/certs.d/\$\${CLOUDONE_IMAGESECURITY_HOST}:5000/ca.crt
           sudo update-ca-certificates
 
-          docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ deepsecurity/smartcheck-scan-action \
+          docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.cache:/root/.cache/ deepsecurity/smartcheck-scan-action \
           --preregistry-scan \
           --preregistry-password=\$\${CLOUDONE_PRESCAN_PASSWORD} \
           --preregistry-user=\$\${CLOUDONE_PRESCAN_USER} \
@@ -453,8 +453,11 @@ steps:
 Use cloud-build-local - It is possible to run the exact same build process which runs in Cloud Build on your local machine. Please keep in mind Docker is required.
 
 ```shell
-cloud-build-local \
-  --config=cloudbuild.yaml \
+cloud-build-local --config=cloudbuild.yaml .
+```
+or
+```shell
+cloud-build-local --config=cloudbuild.yaml \
   --dryrun=false \
   --push .
 ```
@@ -482,6 +485,7 @@ steps:
       - 'CLOUDONE_IMAGESECURITY_PASSWORD=${_CLOUDONE_IMAGESECURITY_PASSWORD}'
       - 'CLOUDONE_PRESCAN_USER=${_CLOUDONE_PRESCAN_USER}'
       - 'CLOUDONE_PRESCAN_PASSWORD=${_CLOUDONE_PRESCAN_PASSWORD}'
+      - 'DOCKER_TLS_CERTDIR=/usr/local/share/ca-certificates'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -490,17 +494,21 @@ steps:
             sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/$${CLOUDONE_IMAGESECURITY_HOST}.crt
           update-ca-certificates
 
-          docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ deepsecurity/smartcheck-scan-action \
-          --preregistry-scan \
-          --preregistry-password=\$\${CLOUDONE_PRESCAN_PASSWORD} \
-          --preregistry-user=\$\${CLOUDONE_PRESCAN_USER} \
-          --image-name=gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} \
-          --smartcheck-host=\$\${CLOUDONE_IMAGESECURITY_HOST} \
-          --smartcheck-user=\$\${CLOUDONE_IMAGESECURITY_USER} \
-          --smartcheck-password=\$\${CLOUDONE_IMAGESECURITY_PASSWORD} \
-          --insecure-skip-tls-verify \
-          --insecure-skip-registry-tls-verify \
-          --findings-threshold='{"malware": 0, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
+          echo $${CLOUDONE_PRESCAN_PASSWORD} | docker login $${CLOUDONE_IMAGESECURITY_HOST}:5000 --username $${CLOUDONE_PRESCAN_USER} --password-stdin
+          cat /proc/self/mounts
+
+          docker run  -v /var/run/docker.sock:/var/run/docker.sock \
+            -v /home/marwin_mu/.cache:/root/.cache/ deepsecurity/smartcheck-scan-action \
+            --preregistry-scan \
+            --preregistry-password=$${CLOUDONE_PRESCAN_PASSWORD} \
+            --preregistry-user=$${CLOUDONE_PRESCAN_USER} \
+            --image-name=gcr.io/devtest-285306/c1-app-sec-uploader:latest \
+            --smartcheck-host=$${CLOUDONE_IMAGESECURITY_HOST} \
+            --smartcheck-user=$${CLOUDONE_IMAGESECURITY_USER} \
+            --smartcheck-password=$${CLOUDONE_IMAGESECURITY_PASSWORD} \
+            --insecure-skip-tls-verify \
+            --insecure-skip-registry-tls-verify \
+            --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
 
 ### Publish
   - id: 'publish'
