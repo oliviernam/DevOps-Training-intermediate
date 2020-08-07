@@ -21,6 +21,9 @@
 ## TODO
 
 - Integrate Application Security to the Lab
+- Potentially dissect UI workflow
+- Change to Uploader
+- Potentially integrate DNS??
 
 ## Prerequisites
 
