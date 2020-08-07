@@ -421,103 +421,50 @@ Login to GitHub and fork the Uploaders app:
 
 ### Create the Buildspec
 
+Download and review the buildspec.yml, this is the effective definition of the pipeline.
+
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-aws/snippets/buildspec.yml?token=AD7OGAVFKJHYLZXZ7F5XQIC7FVKSO --output buildspec.yml
-```
-cat <<EOF > buildspec.yml
----
-version: 0.2
-phases:
-  install:
-    commands:
-      - curl -sS -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-07-26/bin/linux/amd64/aws-iam-authenticator
-      - curl -sS -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl
-      - chmod +x ./kubectl ./aws-iam-authenticator
-      - export PATH=$PWD/:$PATH
-      - apt-get update && apt-get -y install jq python3-pip python3-dev && pip3 install --upgrade awscli
-      #
-      # If using not publicly trusted certificates:
-      #
-      - export PRE_SCAN_REPOSITORY_CLEAN=$(echo $PRE_SCAN_REPOSITORY | sed -e 's|^[^/]*//||' -e 's/[/:].*$//')
-      - openssl s_client -showcerts -connect $PRE_SCAN_REPOSITORY_CLEAN < /dev/null | \
-            sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/$PRE_SCAN_REPOSITORY_CLEAN.crt && \
-            update-ca-certificates
-  pre_build:
-      commands:
-        # - TAG="$REPOSITORY_NAME.$REPOSITORY_BRANCH.$ENVIRONMENT_NAME.$(date +%Y-%m-%d.%H.%M.%S).$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
-        - TAG="latest"
-        - sed -i 's@CONTAINER_IMAGE@'"$REPOSITORY_URI:$TAG"'@' app-eks.yml
-        - $(aws ecr get-login --no-include-email)
-        - export KUBECONFIG=$HOME/.kube/config
-  build:
-    commands:
-      - docker build --tag $REPOSITORY_URI:$TAG .
+curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-aws/snippets/buildspec.yml --output buildspec.yml
 
-  post_build:
-    commands:
-      # Smart Check Pre-Registry-Scan
-      - >-
-        docker run -v /var/run/docker.sock:/var/run/docker.sock
-        deepsecurity/smartcheck-scan-action
-        --image-name "$REPOSITORY_URI:$TAG"
-        --findings-threshold "{\"malware\":0,\"vulnerabilities\":{\"defcon1\":0,\"critical\":0,\"high\":1},\"contents\":{\"defcon1\":0,\"critical\":1,\"high\":1},\"checklists\":{\"defcon1\":0,\"critical\":0,\"high\":0}}"
-        --preregistry-host="$PRE_SCAN_REPOSITORY"
-        --smartcheck-host="$SMARTCHECK_HOST"
-        --smartcheck-user="$SMARTCHECK_USER"
-        --smartcheck-password="$SMARTCHECK_PWD"
-        --insecure-skip-tls-verify
-        --preregistry-scan
-        --preregistry-user "$PRE_SCAN_USER"
-        --preregistry-password "$PRE_SCAN_PWD"
+# or
 
-      # Push to ECR
-      - docker push $REPOSITORY_URI:$TAG
-
-      # Deploy to EKS
-      - CREDENTIALS=$(aws sts assume-role --role-arn $EKS_KUBECTL_ROLE_ARN --role-session-name codebuild-kubectl --duration-seconds 900)
-      - export AWS_ACCESS_KEY_ID="$(echo ${CREDENTIALS} | jq -r '.Credentials.AccessKeyId')"
-      - export AWS_SECRET_ACCESS_KEY="$(echo ${CREDENTIALS} | jq -r '.Credentials.SecretAccessKey')"
-      - export AWS_SESSION_TOKEN="$(echo ${CREDENTIALS} | jq -r '.Credentials.SessionToken')"
-      - export AWS_EXPIRATION=$(echo ${CREDENTIALS} | jq -r '.Credentials.Expiration')
-      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
-      - kubectl apply -f app-eks.yml
-      - printf '[{"name":"c1-app-sec-uploader","imageUri":"%s"}]' $REPOSITORY_URI:$TAG > build.json
-artifacts:
-  files: build.json
-EOF
+curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/buildspec.yml --output buildspec.yml
 ```
 
 ### Create Kubernetes Deployment and Service Definition
 
-```yaml
+```shell
+export IMAGE_NAME=c1-app-sec-uploader
+export IMAGE_TAG=latest
+cat <<EOF > app-aws.yml
 apiVersion: v1
 kind: Service
 metadata:
   annotations:
     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
-  name: c1-app-sec-uploader
+  name: ${IMAGE_NAME}
   labels:
-    app: c1-app-sec-uploader
+    app: ${IMAGE_NAME}
 spec:
   type: LoadBalancer
   ports:
-  - port: 5000
-    name: c1-app-sec-uploader
-    targetPort: 5000
+  - port: 80
+    name: ${IMAGE_NAME}
+    targetPort: 80
   selector:
-    app: c1-app-sec-uploader
+    app: ${IMAGE_NAME}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: c1-app-sec-uploader
-  name: c1-app-sec-uploader
+    app: ${IMAGE_NAME}
+  name: ${IMAGE_NAME}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: c1-app-sec-uploader
+      app: ${IMAGE_NAME}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -526,25 +473,22 @@ spec:
   template:
     metadata:
       labels:
-        app: c1-app-sec-uploader
+        app: ${IMAGE_NAME}
     spec:
       containers:
-      - name: c1-app-sec-uploader
+      - name: ${IMAGE_NAME}
         image: CONTAINER_IMAGE
         imagePullPolicy: Always
         ports:
-        - containerPort: 5000
+        - containerPort: 80
+EOF
 ```
 
 ### GitHub Access Token
 
-In order for CodePipeline to receive callbacks from GitHub, we need to generate a personal access token.
+In order for CodePipeline to receive callbacks from GitHub, we need to generate a personal access token. Once created, an access token can be stored in a secure enclave and reused, so this step is only required during the first run or when you need to generate new keys.
 
-Once created, an access token can be stored in a secure enclave and reused, so this step is only required during the first run or when you need to generate new keys.
-
-Open up the New personal access page in GitHub.
-
-Enter a value for Token description, check the repo permission scope and scroll down and click the Generate token button
+Open up the personal access page in GitHub. Enter a value for Token description, check the repo permission scope and scroll down and click the Generate token button
 
 ### CodePipeline Setup
 
