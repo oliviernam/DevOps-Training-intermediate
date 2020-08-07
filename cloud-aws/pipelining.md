@@ -24,8 +24,9 @@
     - [Create Kubernetes Deployment and Service Definition](#create-kubernetes-deployment-and-service-definition)
     - [GitHub Access Token](#github-access-token)
     - [CodePipeline Setup](#codepipeline-setup)
-  - [CodePipeline CloudFormation *c1-app-sec-uploader-pipeline.cfn.yml*](#codepipeline-cloudformation-c1-app-sec-uploader-pipelinecfnyml)
+      - [UI Path](#ui-path)
   - [Appendix](#appendix)
+    - [Delete an EKS Cluster](#delete-an-eks-cluster)
     - [*BuildSpec.yml*](#buildspecyml)
     - [hash -r](#hash--r)
 
@@ -496,32 +497,7 @@ Each EKS deployment/service should have its own CodePipeline and be located in a
 
 Now we are going to create the AWS CodePipeline using AWS CloudFormation.
 
-Click the Launch button to create the CloudFormation stack in the AWS Management Console.
-
-<https://console.aws.amazon.com/cloudformation/home?#/stacks/create/review?stackName=c1-app-sec-uploader-codepipeline&templateURL=https://moadsd-ng.s3.eu-central-1.amazonaws.com/c1-app-sec-uploader-pipeline.cfn.yml>
-
-After the console is open, enter your GitHub username, personal access token (created in previous step), check the acknowledge box and then click the “Create stack” button located at the bottom of the page.
-
-Wait for the status to change from “CREATE_IN_PROGRESS” to CREATE_COMPLETE before moving on to the next step.
-
-Open CodePipeline in the Management Console. You will see a CodePipeline that starts with c1-app-sec-uploader-codepipeline. Click this link to view the details.
-<https://console.aws.amazon.com/codesuite/codepipeline/pipelines>
-
-To review the status of the deployment, you can run:
-
-```shell
-kubectl describe deployment c1-app-sec-uploader
-```
-
-For the status of the service, run the following command:
-
-```shell
-kubectl describe service c1-app-sec-uploader
-```
-
-## CodePipeline CloudFormation *c1-app-sec-uploader-pipeline.cfn.yml*
-
-Download and review the buildspec.yml, this is the effective definition of the pipeline.
+Download and review the Cloud Formation Template.
 
 ```shell
 curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-aws/snippets/c1-app-sec-uploader-pipeline.cfn.yml --output c1-app-sec-uploader-pipeline.cfn.yml
@@ -543,7 +519,58 @@ Create the stack
 aws cloudformation deploy --stack-name c1-app-sec-uploader-pipeline --template-file c1-app-sec-uploader-pipeline.cfn.yml --capabilities CAPABILITY_IAM
 ```
 
+#### UI Path
+
+Click the Launch button to create the CloudFormation stack in the AWS Management Console.
+
+<https://console.aws.amazon.com/cloudformation/home?#/stacks/create/review?stackName=c1-app-sec-uploader-codepipeline&templateURL=https://moadsd-ng.s3.eu-central-1.amazonaws.com/c1-app-sec-c1-app-sec-uploader-pipeline.cfn.yml>
+
+After the console is open, enter your GitHub username, personal access token (created in previous step), check the acknowledge box and then click the “Create stack” button located at the bottom of the page.
+
+Wait for the status to change from “CREATE_IN_PROGRESS” to CREATE_COMPLETE before moving on to the next step.
+
+Open CodePipeline in the Management Console. You will see a CodePipeline that starts with c1-app-sec-uploader-codepipeline. Click this link to view the details.
+<https://console.aws.amazon.com/codesuite/codepipeline/pipelines>
+
+To review the status of the deployment, you can run:
+
+```shell
+kubectl describe deployment c1-app-sec-uploader
+```
+
+For the status of the service, run the following command:
+
+```shell
+kubectl describe service c1-app-sec-uploader
+```
+
 ## Appendix
+
+### Delete an EKS Cluster
+
+List all services running in your cluster.
+
+```shell
+kubectl get svc --all-namespaces
+```
+
+Delete any services that have an associated EXTERNAL-IP value. These services are fronted by an Elastic Load Balancing load balancer, and you must delete them in Kubernetes to allow the load balancer and associated resources to be properly released.
+
+```shell
+kubectl delete svc service-name
+```
+
+Get the cluster name
+
+```shell
+eksctl get cluster
+```
+
+Delete the cluster and its associated worker nodes.
+
+```shell
+eksctl delete cluster --name `eksctl get cluster -o json | jq -r '.[].name'`
+```
 
 ### *BuildSpec.yml*
 
