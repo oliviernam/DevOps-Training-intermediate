@@ -29,6 +29,8 @@
 ## TODO
 
 - Integrate Application Security to the Lab
+- Solve Certificate issue
+- Potentially integrate DNS??
 
 ## Prerequisites
 
@@ -179,23 +181,23 @@ curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-ip.sh
 
 We are now going to fork the sample Kubernetes service so that we will be able modify the repository and trigger builds.
 
-Login to GitHub and fork the Troopers app:
-<https://github.com/mawinkler/troopers>
+Login to GitHub and fork the Uploaders app:
+<https://github.com/mawinkler/c1-app-sec-uploader>
 
 And now clone it from your git:
 
 ```shell
-git clone https://github.com/mawinkler/troopers.git
-cd troopers
+git clone https://github.com/mawinkler/c1-app-sec-uploader.git
+cd c1-app-sec-uploader
 ```
 
 ### Create a Cloud Source Repository
 
 ```shell
-gcloud source repos create troopers
+gcloud source repos create c1-app-sec-uploader
 git init
 git config credential.helper gcloud.sh
-git remote add gcp https://source.developers.google.com/p/$PROJECT/r/troopers
+git remote add gcp https://source.developers.google.com/p/$PROJECT/r/c1-app-sec-uploader
 ```
 
 Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your Git username.
@@ -214,14 +216,14 @@ git push gcp master
 ```
 
 The repository can be accessed via
-<https://source.developers.google.com/p/$PROJECT/r/troopers>
+<https://source.developers.google.com/p/$PROJECT/r/c1-app-sec-uploader>
 
 ## Prepare the Cloud Build, Publishing and Kubernetes Deployment
 
 ### Create Kubernetes Deployment and Service Definition
 
 ```shell
-export IMAGE_NAME=troopers
+export IMAGE_NAME=c1-app-sec-uploader
 export IMAGE_TAG=latest
 cat <<EOF > app-gcp.yml
 apiVersion: v1
@@ -419,7 +421,7 @@ git push gcp master
 Query the Load Balancer IP by
 
 ```shell
-kubectl -n troopers get services
+kubectl -n c1-app-sec-uploader get services
 ```
 
 ## Knowledge
