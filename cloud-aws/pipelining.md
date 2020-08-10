@@ -20,11 +20,11 @@
     - [Create IAM Role for EKS](#create-iam-role-for-eks)
     - [Modify AWS-Auth ConfigMap](#modify-aws-auth-configmap)
     - [Fork Sample Repository](#fork-sample-repository)
-    - [Create the Buildspec](#create-the-buildspec)
-    - [Create Kubernetes Deployment and Service Definition](#create-kubernetes-deployment-and-service-definition)
-    - [GitHub Access Token](#github-access-token)
     - [CodePipeline Setup](#codepipeline-setup)
-      - [UI Path](#ui-path)
+    - [Populate the CodeCommit Repository](#populate-the-codecommit-repository)
+      - [Create the Buildspec](#create-the-buildspec)
+      - [Create Kubernetes Deployment and Service Definition](#create-kubernetes-deployment-and-service-definition)
+    - [UI Path - REMOVE](#ui-path---remove)
   - [Appendix](#appendix)
     - [Delete an EKS Cluster](#delete-an-eks-cluster)
     - [*BuildSpec.yml*](#buildspecyml)
@@ -292,13 +292,15 @@ helm version
 Create an eksctl deployment file (ekscluster.yaml) use in creating your cluster using the following syntax:
 
 ```shell
+export CLUSTER_NAME=ekscluster-eksctl
+
 cat << EOF > ekscluster.yaml
 ---
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 
 metadata:
-  name: ekscluster-eksctl
+  name: ${CLUSTER_NAME}
   region: ${AWS_REGION}
 
 managedNodeGroups:
@@ -353,14 +355,14 @@ export DSSC_AC=<activation code>
 Finally, run
 
 ```shell
-DNS_NAME="*.${AWS_REGION}.elb.amazonaws.com" && \
+export DNS_NAME="*.${AWS_REGION}.elb.amazonaws.com" && \
   curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-dns.sh | bash
 ```
 
 or
 
 ```shell
-DNS_NAME="*.${AWS_REGION}.elb.amazonaws.com" && \
+export DNS_NAME="*.${AWS_REGION}.elb.amazonaws.com" && \
   curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-dns.sh | bash
 ```
 
@@ -420,7 +422,66 @@ Login to GitHub and fork the Uploaders app:
 
 <https://github.com/mawinkler/c1-app-sec-uploader>
 
-### Create the Buildspec
+### CodePipeline Setup
+
+Each EKS deployment/service should have its own CodePipeline and be located in an isolated source repository.
+
+Now we are going to create the AWS CodePipeline using AWS CloudFormation.
+
+Download and review the stack definition.
+
+```shell
+curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-aws/snippets/c1-app-sec-uploader-pipeline.cfn.yml --output c1-app-sec-uploader-pipeline.cfn.yml
+
+# or
+
+curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/c1-app-sec-uploader-pipeline.cfn.yml --output c1-app-sec-uploader-pipeline.cfn.yml
+```
+
+Do the parameter expansion.
+
+TODO
+
+```shell
+export DSSC_HOST=ae7e1d7fc25384ca6bb987c15878a1ea-1416717849.eu-central-1.elb.amazonaws.com
+export TREND_AP_KEY=1d3f2dd6-76ea-4e03-a40a-a28d13c86436
+export TREND_AP_SECRET=39bacd13-81a0-42db-84ca-1a6093eeca16
+
+eval "cat <<EOF
+$(<c1-app-sec-uploader-pipeline.cfn.yml)
+EOF
+" 2> /dev/null > c1-app-sec-uploader-pipeline.cfn.yml
+```
+
+Validate the stack
+
+```shell
+aws cloudformation validate-template --template-body file://c1-app-sec-uploader-pipeline.cfn.yml
+```
+
+Finally, create the stack
+
+```shell
+aws cloudformation deploy --stack-name c1-app-sec-uploader-pipeline --template-file c1-app-sec-uploader-pipeline.cfn.yml --capabilities CAPABILITY_IAM
+```
+
+### Populate the CodeCommit Repository
+
+```shell
+git clone https://github.com/<YOUR GITHUB HANDLE>/c1-app-sec-uploader.git
+cd c1-app-sec-uploader
+git init
+git remote add aws https://git-codecommit.<YOUR REGION>.amazonaws.com/v1/repos/c1-app-sec-uploader
+```
+
+Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your Git username.
+
+```shell
+git config --global user.email "[EMAIL_ADDRESS]"
+git config --global user.name "[USERNAME]"
+```
+
+#### Create the Buildspec
 
 Download and review the buildspec.yml, this is the effective definition of the pipeline.
 
@@ -432,98 +493,45 @@ curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/clo
 curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/buildspec.yml --output buildspec.yml
 ```
 
-### Create Kubernetes Deployment and Service Definition
+#### Create Kubernetes Deployment and Service Definition
+
+Download and review the app-eks.yml, this is the deployment manifest for kubernetes.
+
+```shell
+curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-aws/snippets/app-eks.yml --output app-eks.yml
+
+# or
+
+curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/app-eks.yml --output app-eks.yml
+```
+
+Do the parameter expansion.
 
 ```shell
 export IMAGE_NAME=c1-app-sec-uploader
 export IMAGE_TAG=latest
-cat <<EOF > app-aws.yml
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
-  name: ${IMAGE_NAME}
-  labels:
-    app: ${IMAGE_NAME}
-spec:
-  type: LoadBalancer
-  ports:
-  - port: 80
-    name: ${IMAGE_NAME}
-    targetPort: 80
-  selector:
-    app: ${IMAGE_NAME}
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: ${IMAGE_NAME}
-  name: ${IMAGE_NAME}
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ${IMAGE_NAME}
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
-  template:
-    metadata:
-      labels:
-        app: ${IMAGE_NAME}
-    spec:
-      containers:
-      - name: ${IMAGE_NAME}
-        image: CONTAINER_IMAGE
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 80
+
+eval "cat <<EOF
+$(<app-eks.yml)
 EOF
+" 2> /dev/null > app-eks.yml
 ```
 
-### GitHub Access Token
-
-In order for CodePipeline to receive callbacks from GitHub, we need to generate a personal access token. Once created, an access token can be stored in a secure enclave and reused, so this step is only required during the first run or when you need to generate new keys.
-
-Open up the personal access page in GitHub. Enter a value for Token description, check the repo permission scope and scroll down and click the Generate token button
-
-### CodePipeline Setup
-
-Each EKS deployment/service should have its own CodePipeline and be located in an isolated source repository.
-
-Now we are going to create the AWS CodePipeline using AWS CloudFormation.
-
-Download and review the Cloud Formation Template.
+And finally add all the files and folders recursively to the CodeCommit Repository.
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-aws/snippets/c1-app-sec-uploader-pipeline.cfn.yml --output c1-app-sec-uploader-pipeline.cfn.yml
-
-# or
-
-curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/c1-app-sec-uploader-pipeline.cfn.yml --output c1-app-sec-uploader-pipeline.cfn.yml
+git add .
+git commit -m "Initial commit"
+git push aws master
 ```
 
-Validate the stack
+The last command should trigger the pipeline.
 
-```shell
-aws cloudformation validate-template --template-body file://c1-app-sec-uploader-pipeline.cfn.yml
-```
-
-Create the stack
-
-```shell
-aws cloudformation deploy --stack-name c1-app-sec-uploader-pipeline --template-file c1-app-sec-uploader-pipeline.cfn.yml --capabilities CAPABILITY_IAM
-```
-
-#### UI Path
+### UI Path - REMOVE
 
 Click the Launch button to create the CloudFormation stack in the AWS Management Console.
 
-<https://console.aws.amazon.com/cloudformation/home?#/stacks/create/review?stackName=c1-app-sec-uploader-codepipeline&templateURL=https://moadsd-ng.s3.eu-central-1.amazonaws.com/c1-app-sec-c1-app-sec-uploader-pipeline.cfn.yml>
+<https://console.aws.amazon.com/cloudformation/home?#/stacks/create/review?stackName=c1-app-sec-uploader-codepipeline&templateURL=https://devops-training-intermediate.s3.eu-central-1.amazonaws.com/c1-app-sec-uploader-pipeline.cfn.yml>
 
 After the console is open, enter your GitHub username, personal access token (created in previous step), check the acknowledge box and then click the “Create stack” button located at the bottom of the page.
 
