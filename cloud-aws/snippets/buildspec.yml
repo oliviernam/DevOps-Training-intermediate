@@ -11,10 +11,7 @@ phases:
       #
       # If using not publicly trusted certificates:
       #
-      - export PRE_SCAN_REPOSITORY_CLEAN=$(echo $PRE_SCAN_REPOSITORY | sed -e 's|^[^/]*//||' -e 's/[/:].*$//')
-      - openssl s_client -showcerts -connect $PRE_SCAN_REPOSITORY_CLEAN < /dev/null | \
-            sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/$PRE_SCAN_REPOSITORY_CLEAN.crt && \
-            update-ca-certificates
+      - openssl s_client -showcerts -connect $SMARTCHECK_HOST:443 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/$SMARTCHECK_HOST.crt && update-ca-certificates
   pre_build:
       commands:
         # - TAG="$REPOSITORY_NAME.$REPOSITORY_BRANCH.$ENVIRONMENT_NAME.$(date +%Y-%m-%d.%H.%M.%S).$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
@@ -53,6 +50,7 @@ phases:
       - export AWS_SESSION_TOKEN="$(echo ${CREDENTIALS} | jq -r '.Credentials.SessionToken')"
       - export AWS_EXPIRATION=$(echo ${CREDENTIALS} | jq -r '.Credentials.Expiration')
       - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
+      - sed -i 's|CONTAINER_IMAGE|$REPOSITORY_URI:$TAG|' ./app-eks.yml
       - kubectl apply -f app-eks.yml
       - printf '[{"name":"c1-app-sec-uploader","imageUri":"%s"}]' $REPOSITORY_URI:$TAG > build.json
 artifacts:
