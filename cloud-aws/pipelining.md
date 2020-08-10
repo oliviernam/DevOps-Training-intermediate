@@ -24,10 +24,8 @@
     - [Populate the CodeCommit Repository](#populate-the-codecommit-repository)
       - [Create the Buildspec](#create-the-buildspec)
       - [Create Kubernetes Deployment and Service Definition](#create-kubernetes-deployment-and-service-definition)
-    - [UI Path - REMOVE](#ui-path---remove)
   - [Appendix](#appendix)
     - [Delete an EKS Cluster](#delete-an-eks-cluster)
-    - [*BuildSpec.yml*](#buildspecyml)
     - [hash -r](#hash--r)
 
 ## TODO
@@ -440,12 +438,11 @@ curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/c1-app-sec-u
 
 Do the parameter expansion.
 
-TODO
-
 ```shell
-export DSSC_HOST=ae7e1d7fc25384ca6bb987c15878a1ea-1416717849.eu-central-1.elb.amazonaws.com
-export TREND_AP_KEY=1d3f2dd6-76ea-4e03-a40a-a28d13c86436
-export TREND_AP_SECRET=39bacd13-81a0-42db-84ca-1a6093eeca16
+export DSSC_HOST=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+export TREND_AP_KEY=<YOUR CLOUD ONE APPLICATION SECURITY KEY>
+export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET>
+export CLUSTER_NAME=$(eksctl get cluster -o json | jq -r '.[].name')
 
 eval "cat <<EOF
 $(<c1-app-sec-uploader-pipeline.cfn.yml)
@@ -527,31 +524,6 @@ git push aws master
 
 The last command should trigger the pipeline.
 
-### UI Path - REMOVE
-
-Click the Launch button to create the CloudFormation stack in the AWS Management Console.
-
-<https://console.aws.amazon.com/cloudformation/home?#/stacks/create/review?stackName=c1-app-sec-uploader-codepipeline&templateURL=https://devops-training-intermediate.s3.eu-central-1.amazonaws.com/c1-app-sec-uploader-pipeline.cfn.yml>
-
-After the console is open, enter your GitHub username, personal access token (created in previous step), check the acknowledge box and then click the “Create stack” button located at the bottom of the page.
-
-Wait for the status to change from “CREATE_IN_PROGRESS” to CREATE_COMPLETE before moving on to the next step.
-
-Open CodePipeline in the Management Console. You will see a CodePipeline that starts with c1-app-sec-uploader-codepipeline. Click this link to view the details.
-<https://console.aws.amazon.com/codesuite/codepipeline/pipelines>
-
-To review the status of the deployment, you can run:
-
-```shell
-kubectl describe deployment c1-app-sec-uploader
-```
-
-For the status of the service, run the following command:
-
-```shell
-kubectl describe service c1-app-sec-uploader
-```
-
 ## Appendix
 
 ### Delete an EKS Cluster
@@ -568,11 +540,7 @@ Delete any services that have an associated EXTERNAL-IP value. These services ar
 kubectl delete svc service-name
 ```
 
-Get the cluster name
-
-```shell
-eksctl get cluster
-```
+Now
 
 Delete the cluster and its associated worker nodes.
 
@@ -580,71 +548,8 @@ Delete the cluster and its associated worker nodes.
 eksctl delete cluster --name `eksctl get cluster -o json | jq -r '.[].name'`
 ```
 
-### *BuildSpec.yml*
-
-```yaml
----
-version: 0.2
-phases:
-  install:
-    commands:
-      - curl -sS -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-07-26/bin/linux/amd64/aws-iam-authenticator
-      - curl -sS -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl
-      - chmod +x ./kubectl ./aws-iam-authenticator
-      - export PATH=$PWD/:$PATH
-      - apt-get update && apt-get -y install jq python3-pip python3-dev && pip3 install --upgrade awscli
-      #
-      # If using not publicly trusted certificates:
-      #
-      # - export PRE_SCAN_REPOSITORY_CLEAN=$(echo $PRE_SCAN_REPOSITORY | sed -e 's|^[^/]*//||' -e 's/[/:].*$//')
-      # - openssl s_client -showcerts -connect $PRE_SCAN_REPOSITORY_CLEAN:443 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > smcert.crt
-      # - cp smcert.crt /usr/local/share/ca-certificates/$PRE_SCAN_REPOSITORY.crt
-      # - update-ca-certificates
-  pre_build:
-      commands:
-        # - TAG="$REPOSITORY_NAME.$REPOSITORY_BRANCH.$ENVIRONMENT_NAME.$(date +%Y-%m-%d.%H.%M.%S).$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
-        - TAG="latest"
-        - sed -i 's@CONTAINER_IMAGE@'"$REPOSITORY_URI:$TAG"'@' app-eks.yml
-        - $(aws ecr get-login --no-include-email)
-        - export KUBECONFIG=$HOME/.kube/config
-  build:
-    commands:
-      - docker build --tag $REPOSITORY_URI:$TAG .
-
-  post_build:
-    commands:
-      # Smart Check Pre-Registry-Scan
-      - >-
-        docker run -v /var/run/docker.sock:/var/run/docker.sock
-        deepsecurity/smartcheck-scan-action
-        --image-name "$REPOSITORY_URI:$TAG"
-        --findings-threshold "{\"malware\":0,\"vulnerabilities\":{\"defcon1\":0,\"critical\":0,\"high\":1},\"contents\":{\"defcon1\":0,\"critical\":1,\"high\":1},\"checklists\":{\"defcon1\":0,\"critical\":0,\"high\":0}}"
-        --preregistry-host="$PRE_SCAN_REPOSITORY"
-        --smartcheck-host="$SMARTCHECK_HOST"
-        --smartcheck-user="$SMARTCHECK_USER"
-        --smartcheck-password="$SMARTCHECK_PWD"
-        --insecure-skip-tls-verify
-        --preregistry-scan
-        --preregistry-user "$PRE_SCAN_USER"
-        --preregistry-password "$PRE_SCAN_PWD"
-
-      # Push to ECR
-      - docker push $REPOSITORY_URI:$TAG
-
-      # Deploy to EKS
-      - CREDENTIALS=$(aws sts assume-role --role-arn $EKS_KUBECTL_ROLE_ARN --role-session-name codebuild-kubectl --duration-seconds 900)
-      - export AWS_ACCESS_KEY_ID="$(echo ${CREDENTIALS} | jq -r '.Credentials.AccessKeyId')"
-      - export AWS_SECRET_ACCESS_KEY="$(echo ${CREDENTIALS} | jq -r '.Credentials.SecretAccessKey')"
-      - export AWS_SESSION_TOKEN="$(echo ${CREDENTIALS} | jq -r '.Credentials.SessionToken')"
-      - export AWS_EXPIRATION=$(echo ${CREDENTIALS} | jq -r '.Credentials.Expiration')
-      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
-      - kubectl apply -f app-eks.yml
-      - printf '[{"name":"c1-app-sec-uploader","imageUri":"%s"}]' $REPOSITORY_URI:$TAG > build.json
-artifacts:
-  files: build.json
-```
-
 ### hash -r
+
 hash [-lr] [-p filename] [-dt] [name]
               Each  time  hash  is  invoked,  the  full pathname of the command name is determined by searching the directories in $PATH and remembered.  Any previously-remembered pathname is discarded.  If the -p
               option is supplied, no path search is performed, and filename is used as the full file name of the command.  The -r option causes the shell to forget all remembered locations.  The -d  option  causes
