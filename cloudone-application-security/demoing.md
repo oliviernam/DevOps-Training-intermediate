@@ -4,7 +4,7 @@
   - [Demoing w/ Uploader](#demoing-w-uploader)
     - [Shellshock](#shellshock)
     - [Petya](#petya)
-  - [Demoing w/ InSecureStore](#demoing-w-insecurestore)
+  - [Demoing w/ InSekureStore](#demoing-w-insekurestore)
     - [SQL Injection](#sql-injection)
       - [Directory Traversal](#directory-traversal)
       - [Remote Command Execution](#remote-command-execution)
@@ -29,7 +29,7 @@ Upload: `Petya.bin`
 
 *Application Security Protection by `Malicious File Upload`*
 
-## Demoing w/ InSecureStore
+## Demoing w/ InSekureStore
 
 ### SQL Injection
 
@@ -65,6 +65,12 @@ or
 
 ```text
 -b && uname -a
+```
+
+or
+
+```text
+-b && cat ./../../etc/passwd
 ```
 
 Within the details of a text file you will see the output of your command.
