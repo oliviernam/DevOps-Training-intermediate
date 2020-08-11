@@ -15,6 +15,7 @@ printf ' - %s\n' "configured"
 
 printf '%s' "Configure Image Security overrides"
 
+DSSC_TEMPPW='justatemppw'
 cat <<EOF >./overrides-image-security.yml
 ##
 ## Default value: (none)
