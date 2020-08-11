@@ -71,7 +71,7 @@ Parameters:
   KubectlRoleName:
     Type: String
     Description: The Role for the deployments on EKS
-    Default: EksClusterCodeBuildKubectlRole
+    Default: ${CODEBUILD_ROLE_NAME}
     MinLength: 1
     MaxLength: 500
     ConstraintDescription: Do not change this
