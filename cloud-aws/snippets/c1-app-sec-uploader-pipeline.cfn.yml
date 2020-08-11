@@ -264,7 +264,7 @@ Resources:
   CodeCommitRepo:
     Type: AWS::CodeCommit::Repository
     Properties:
-      RepositoryDescription: Code Repository for the DevSecOps sample
+      RepositoryDescription: Code Repository for ${IMAGE_NAME}
       RepositoryName: !Ref CodeCommitRepoName
 
   PreScanBuild${1}:
@@ -317,7 +317,7 @@ Resources:
       Stages:
         - Name: Source
           Actions:
-            - Name: Sample-App
+            - Name: ${IMAGE_NAME}
               ActionTypeId:
                 Category: Source
                 Owner: AWS
@@ -327,7 +327,7 @@ Resources:
                 RepositoryName: !GetAtt CodeCommitRepo.Name
                 BranchName: master
               OutputArtifacts:
-                - Name: Sample-App
+                - Name: ${IMAGE_NAME}
               RunOrder: 1
         - Name: BuildAndScan
           Actions:
@@ -340,7 +340,7 @@ Resources:
               Configuration:
                 ProjectName: !Ref PreScanBuild${1}
               InputArtifacts:
-                - Name: Sample-App
+                - Name: ${IMAGE_NAME}
               OutputArtifacts:
                 - Name: PreScanOutput
               RunOrder: 1

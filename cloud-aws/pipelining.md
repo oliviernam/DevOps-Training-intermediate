@@ -1,7 +1,6 @@
 # CI/CD with AWS CodePipeline
 
 - [CI/CD with AWS CodePipeline](#cicd-with-aws-codepipeline)
-  - [TODO](#todo)
   - [Create a Workspace](#create-a-workspace)
     - [Install Kubernetes tools](#install-kubernetes-tools)
     - [Update IAM Settings for the Workspace](#update-iam-settings-for-the-workspace)
@@ -20,19 +19,13 @@
     - [Create IAM Role for EKS](#create-iam-role-for-eks)
     - [Modify AWS-Auth ConfigMap](#modify-aws-auth-configmap)
     - [Fork Sample Repository](#fork-sample-repository)
-    - [CodePipeline Setup](#codepipeline-setup)
     - [Populate the CodeCommit Repository](#populate-the-codecommit-repository)
-      - [Create the Buildspec](#create-the-buildspec)
-      - [Create Kubernetes Deployment and Service Definition](#create-kubernetes-deployment-and-service-definition)
+    - [CodePipeline Setup](#codepipeline-setup)
+    - [Create the Buildspec](#create-the-buildspec)
+    - [Create Kubernetes Deployment and Service Definition](#create-kubernetes-deployment-and-service-definition)
   - [Appendix](#appendix)
     - [Delete an EKS Cluster](#delete-an-eks-cluster)
     - [hash -r](#hash--r)
-
-## TODO
-
-- Integrate Application Security to the Lab
-- Potentially dissect Cloudformation
-- Change to Uploader
 
 ## Create a Workspace
 
@@ -121,7 +114,7 @@ aws configure get default.region
 
 ### Create an IAM Role for the Workspace
 
-First, we define some names:
+Next, we define some names:
 
 ```shell
 export ROLE_NAME=ekscluster-admin
@@ -129,8 +122,6 @@ export INSTANCE_PROFILE_NAME=${ROLE_NAME}
 ```
 
 ```shell
-export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
-
 # Create the policy for EC2 access
 EC2_TRUST="{
   \"Version\": \"2012-10-17\",
@@ -163,9 +154,23 @@ aws iam add-role-to-instance-profile --role-name ${ROLE_NAME} --instance-profile
 
 ### Attach the IAM Role to the Workspace
 
+Which the following commands, we grant our Cloud9 instance the priviliges to manage an EKS cluster.
+
 ```shell
 # Query the instance ID of our Cloud9 environment
 INSTANCE_ID=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=*ekscluster*' --query 'Reservations[*].Instances[*].{Instance:InstanceId}' | jq -r '.[0][0].Instance')
+
+# Attach the IAM role to an existing EC2 instance
+aws ec2 associate-iam-instance-profile --instance-id ${INSTANCE_ID} --iam-instance-profile Name=${INSTANCE_PROFILE_NAME}
+```
+
+If you run in an error here like `An error occurred (IncorrectInstanceState) when calling the AssociateIamInstanceProfile operation: The instance 'i-03ccd0e9c911d8d2a' is not in the 'running' or 'stopped' states.` you either have another ec2 instance with a name containing ekscluster or you're running into a conflict because you are working in a shared account.
+
+To solve this problem, check the instance ID of your active Cloud9 instance in EC2 and assign it manually to the variable INSTANCE_ID. Then attach the role to the instance.
+
+```shell
+# Query the instance ID of our Cloud9 environment
+INSTANCE_ID=<THE INSTANCE ID OF YOUR CLOUD9>
 
 # Attach the IAM role to an existing EC2 instance
 aws ec2 associate-iam-instance-profile --instance-id ${INSTANCE_ID} --iam-instance-profile Name=${INSTANCE_PROFILE_NAME}
@@ -193,7 +198,7 @@ Use the GetCallerIdentity CLI command to validate that the Cloud9 IDE is using t
 aws sts get-caller-identity --query Arn | grep ekscluster-admin -q && echo "IAM role valid" || echo "IAM role NOT valid"
 ```
 
-A single `aws sts get-caller-identity --query Arn` should return something similar to this:
+Note: A single `aws sts get-caller-identity --query Arn` should return something similar to this:
 
 ```shell
 {
@@ -230,13 +235,14 @@ aws ec2 import-key-pair --key-name "ekscluster" --public-key-material fileb://~/
 Create a CMK for the EKS cluster to use when encrypting your Kubernetes secrets:
 
 ```shell
-aws kms create-alias --alias-name alias/ekscluster --target-key-id $(aws kms create-key --query KeyMetadata.Arn --output text)
+ALIAS_NAME="alias/ekscluster"
+aws kms create-alias --alias-name ${ALIAS_NAME} --target-key-id $(aws kms create-key --query KeyMetadata.Arn --output text)
 ```
 
 Let’s retrieve the ARN of the CMK to input into the create cluster command.
 
 ```shell
-export MASTER_ARN=$(aws kms describe-key --key-id alias/ekscluster --query KeyMetadata.Arn --output text)
+export MASTER_ARN=$(aws kms describe-key --key-id ${ALIAS_NAME} --query KeyMetadata.Arn --output text)
 ```
 
 We set the MASTER_ARN environment variable to make it easier to refer to the KMS key later.
@@ -338,7 +344,6 @@ Define some variables
 ```shell
 export DSSC_NAMESPACE='smartcheck'
 export DSSC_USERNAME='administrator'
-export DSSC_TEMPPW='justatemppw'
 export DSSC_PASSWORD='trendmicro'
 export DSSC_REGUSER='administrator'
 export DSSC_REGPASSWORD='trendmicro'
@@ -375,6 +380,7 @@ In this step, we are going to create an IAM role and add an inline policy that w
 Create the role:
 
 ```shell
+export CODEBUILD_ROLE_NAME=ekscluster-codebuild
 TRUST="{
   \"Version\": \"2012-10-17\",
   \"Statement\": [ 
@@ -396,8 +402,8 @@ cat <<EOF > /tmp/iam-role-policy.json
 }
 EOF
 
-aws iam create-role --role-name EksClusterCodeBuildKubectlRole --assume-role-policy-document "$TRUST" --output text --query 'Role.Arn'
-aws iam put-role-policy --role-name EksClusterCodeBuildKubectlRole --policy-name eks-describe --policy-document file:///tmp/iam-role-policy.json
+aws iam create-role --role-name ${CODEBUILD_ROLE_NAME} --assume-role-policy-document "$TRUST" --output text --query 'Role.Arn'
+aws iam put-role-policy --role-name ${CODEBUILD_ROLE_NAME} --policy-name eks-describe --policy-document file:///tmp/iam-role-policy.json
 ```
 
 ### Modify AWS-Auth ConfigMap
@@ -407,7 +413,7 @@ Now that we have the IAM role created, we are going to add the role to the aws-a
 Once the ConfigMap includes this new role, kubectl in the CodeBuild stage of the pipeline will be able to interact with the EKS cluster via the IAM role.
 
 ```shell
-ROLE="    - rolearn: arn:aws:iam::$ACCOUNT_ID:role/EksClusterCodeBuildKubectlRole\n      username: build\n      groups:\n        - system:masters"
+ROLE="    - rolearn: arn:aws:iam::${ACCOUNT_ID}:role/${CODEBUILD_ROLE_NAME}\n      username: build\n      groups:\n        - system:masters"
 kubectl get -n kube-system configmap/aws-auth -o yaml | awk "/mapRoles: \|/{print;print \"$ROLE\";next}1" > /tmp/aws-auth-patch.yml
 kubectl patch configmap/aws-auth -n kube-system --patch "$(cat /tmp/aws-auth-patch.yml)"
 ```
@@ -420,13 +426,35 @@ Login to GitHub and fork the Uploaders app:
 
 <https://github.com/mawinkler/c1-app-sec-uploader>
 
+### Populate the CodeCommit Repository
+
+A remote URL is Git's fancy way of saying "the place where your code is stored." That URL could be your repository on GitHub, or another user's fork, or even on a completely different server.
+
+Git associates a remote URL with a name, and your default remote is usually called origin.
+
+Here, we're adding a remote repository in AWS CodeCommit which our pipeline will use.
+
+```shell
+git clone https://github.com/<YOUR GITHUB HANDLE>/c1-app-sec-uploader.git
+cd c1-app-sec-uploader
+git init
+git remote add aws https://git-codecommit.${AWS_REGION}.amazonaws.com/v1/repos/c1-app-sec-uploader
+```
+
+Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your Git username.
+
+```shell
+git config --global user.email "[EMAIL_ADDRESS]"
+git config --global user.name "[USERNAME]"
+```
+
 ### CodePipeline Setup
 
 Each EKS deployment/service should have its own CodePipeline and be located in an isolated source repository.
 
 Now we are going to create the AWS CodePipeline using AWS CloudFormation.
 
-Download and review the stack definition.
+Still in our source directory, download and review the stack definition. Just look, do not change anything now.
 
 ```shell
 curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-aws/snippets/c1-app-sec-uploader-pipeline.cfn.yml --output c1-app-sec-uploader-pipeline.cfn.yml
@@ -436,13 +464,24 @@ curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/clo
 curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/c1-app-sec-uploader-pipeline.cfn.yml --output c1-app-sec-uploader-pipeline.cfn.yml
 ```
 
+You will realize a couple of chapters. First are the `Parameters` for the pipeline, which you can either leave with the defaults or customize.
+
+The more interesting part is the `Resources` chapter, which defines all used resources for our pipeline. In our case this includes ECR, S3, CodeBuild, CodePipeline, CodeCommit, ServiceRoles, CloudOne Image Security.
+
+Ok, now let's populate the paramenters, but set your Application Security credentials first:
+
+```shell
+export TREND_AP_KEY=<YOUR CLOUD ONE APPLICATION SECURITY KEY>
+export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET>
+```
+
 Do the parameter expansion.
 
 ```shell
 export DSSC_HOST=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-export TREND_AP_KEY=<YOUR CLOUD ONE APPLICATION SECURITY KEY>
-export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET>
 export CLUSTER_NAME=$(eksctl get cluster -o json | jq -r '.[].name')
+export IMAGE_NAME=c1-app-sec-uploader
+export IMAGE_TAG=latest
 
 eval "cat <<EOF
 $(<c1-app-sec-uploader-pipeline.cfn.yml)
@@ -456,29 +495,13 @@ Validate the stack
 aws cloudformation validate-template --template-body file://c1-app-sec-uploader-pipeline.cfn.yml
 ```
 
-Finally, create the stack
+If you get a nice JSON, create the stack
 
 ```shell
 aws cloudformation deploy --stack-name c1-app-sec-uploader-pipeline --template-file c1-app-sec-uploader-pipeline.cfn.yml --capabilities CAPABILITY_IAM
 ```
 
-### Populate the CodeCommit Repository
-
-```shell
-git clone https://github.com/<YOUR GITHUB HANDLE>/c1-app-sec-uploader.git
-cd c1-app-sec-uploader
-git init
-git remote add aws https://git-codecommit.<YOUR REGION>.amazonaws.com/v1/repos/c1-app-sec-uploader
-```
-
-Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your Git username.
-
-```shell
-git config --global user.email "[EMAIL_ADDRESS]"
-git config --global user.name "[USERNAME]"
-```
-
-#### Create the Buildspec
+### Create the Buildspec
 
 Download and review the buildspec.yml, this is the effective definition of the pipeline.
 
@@ -490,7 +513,11 @@ curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/clo
 curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/buildspec.yml --output buildspec.yml
 ```
 
-#### Create Kubernetes Deployment and Service Definition
+Review the build specification and identify what's happening in the different phases.
+
+Can you identify the environment in which the different phases are executed?
+
+### Create Kubernetes Deployment and Service Definition
 
 Download and review the app-eks.yml, this is the deployment manifest for kubernetes.
 
@@ -502,12 +529,11 @@ curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/clo
 curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/app-eks.yml --output app-eks.yml
 ```
 
-Do the parameter expansion.
+Review the deployment manifest. What are going to apply to our cluster?
+
+Then, do the parameter expansion.
 
 ```shell
-export IMAGE_NAME=c1-app-sec-uploader
-export IMAGE_TAG=latest
-
 eval "cat <<EOF
 $(<app-eks.yml)
 EOF
@@ -522,7 +548,17 @@ git commit -m "Initial commit"
 git push aws master
 ```
 
-The last command should trigger the pipeline.
+The last command should trigger the pipeline. Open this link in your browser to see the action happening: <https://console.aws.amazon.com/codesuite/codepipeline/home>
+
+Whenever you change something in the CodeCommit repo, the pipeline will rerun.
+
+If the pipeline did sucessfully finish, you can retrieve the URL for our music uploader with the following command:
+
+```shell
+kubectl get svc -n default c1-app-sec-uploader -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+```
+
+Done. So, let's upload some music files :-)
 
 ## Appendix
 
