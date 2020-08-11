@@ -9,7 +9,7 @@ set -e
 
 printf '%s' "Configure Cloud One Image Security namespace"
 
-kubectl create namespace ${DSSC_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f - > /dev/null
+kubectl create namespace ${DSSC_NAMESPACE} --dry-run=true -o yaml | kubectl apply -f - > /dev/null
 
 printf ' - %s\n' "configured"
 
@@ -169,7 +169,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes \
   -keyout k8s.key -out k8s.crt \
   -subj "/CN=smartcheck-${DSSC_HOST//./-}.nip.io" -extensions san -config req.conf &> /dev/null
 kubectl create secret tls k8s-certificate --cert=k8s.crt --key=k8s.key \
-  --dry-run=client -n ${DSSC_NAMESPACE} -o yaml | kubectl apply -f - > /dev/null
+  --dry-run=true -n ${DSSC_NAMESPACE} -o yaml | kubectl apply -f - > /dev/null
 
 printf ' - %s\n' "done"
 
