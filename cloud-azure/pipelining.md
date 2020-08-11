@@ -272,8 +272,8 @@ As of writing the lab, there seems to be an error in the deployment.yml generati
 To fix it do the following:
 
 ```shell
-git clone https://github.com/${GITHUB_USERNAME}/${APP_NAME}-dev.git
-cd ${APP_NAME}-dev
+git clone https://github.com/${GITHUB_USERNAME}/${APP_NAME}.git
+cd ${APP_NAME}
 code manifests/deployment.yml
 ```
 
