@@ -166,12 +166,16 @@ Finally, run
 
 ```shell
 curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | bash
+export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+export DSSC_HOST="https://smartcheck-${DSSC_HOST_IP//./-}.nip.io"
 ```
 
 or
 
 ```shell
 curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-ip.sh | bash
+export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+export DSSC_HOST="https://smartcheck-${DSSC_HOST_IP//./-}.nip.io"
 ```
 
 ## Create Repository to Host the App Code
@@ -186,17 +190,18 @@ Login to GitHub and fork the Uploaders app:
 And now clone it from your git:
 
 ```shell
-git clone https://github.com/mawinkler/c1-app-sec-uploader.git
-cd c1-app-sec-uploader
+export APP_NAME=c1-app-sec-uploader
+git clone https://github.com/mawinkler/${APP_NAME}.git
+cd ${APP_NAME}
 ```
 
 ### Create a Cloud Source Repository
 
 ```shell
-gcloud source repos create c1-app-sec-uploader
+gcloud source repos create ${APP_NAME}
 git init
 git config credential.helper gcloud.sh
-git remote add gcp https://source.developers.google.com/p/$PROJECT/r/c1-app-sec-uploader
+git remote add gcp https://source.developers.google.com/p/${PROJECT}/r/${APP_NAME}
 ```
 
 Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your Git username.
@@ -215,14 +220,14 @@ git push gcp master
 ```
 
 The repository can be accessed via
-<https://source.developers.google.com/p/$PROJECT/r/c1-app-sec-uploader>
+<https://source.developers.google.com/p/${PROJECT}/r/${APP_NAME}>
 
 ## Prepare the Cloud Build, Publishing and Kubernetes Deployment
 
 ### Create Kubernetes Deployment and Service Definition
 
 ```shell
-export IMAGE_NAME=c1-app-sec-uploader
+export IMAGE_NAME=${APP_NAME}
 export IMAGE_TAG=latest
 cat <<EOF > app-gcp.yml
 apiVersion: v1
@@ -420,7 +425,7 @@ git push gcp master
 Query the Load Balancer IP by
 
 ```shell
-kubectl -n c1-app-sec-uploader get services
+kubectl -n ${APP_NAME} get services
 ```
 
 ## Knowledge
