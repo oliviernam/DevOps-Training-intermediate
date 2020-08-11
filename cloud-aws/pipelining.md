@@ -1,6 +1,7 @@
 # CI/CD with AWS CodePipeline
 
 - [CI/CD with AWS CodePipeline](#cicd-with-aws-codepipeline)
+  - [Prerequisites](#prerequisites)
   - [Create a Workspace](#create-a-workspace)
     - [Install Kubernetes tools](#install-kubernetes-tools)
     - [Update IAM Settings for the Workspace](#update-iam-settings-for-the-workspace)
@@ -26,6 +27,12 @@
   - [Appendix](#appendix)
     - [Delete an EKS Cluster](#delete-an-eks-cluster)
     - [hash -r](#hash--r)
+
+## Prerequisites
+
+- A GitHub account, where you can create a repository. If you don't have one, you can create one for free.
+- An AWS account
+- A CloudOne Application Security Account
 
 ## Create a Workspace
 
@@ -360,6 +367,7 @@ Finally, run
 ```shell
 export DNS_NAME="*.${AWS_REGION}.elb.amazonaws.com" && \
   curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-dns.sh | bash
+export DSSC_HOST=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 ```
 
 or
@@ -367,6 +375,7 @@ or
 ```shell
 export DNS_NAME="*.${AWS_REGION}.elb.amazonaws.com" && \
   curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-dns.sh | bash
+export DSSC_HOST=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 ```
 
 ## CI/CD with CodePipeline
@@ -435,10 +444,11 @@ Git associates a remote URL with a name, and your default remote is usually call
 Here, we're adding a remote repository in AWS CodeCommit which our pipeline will use.
 
 ```shell
-git clone https://github.com/<YOUR GITHUB HANDLE>/c1-app-sec-uploader.git
-cd c1-app-sec-uploader
+export APP_NAME=c1-app-sec-uploader
+git clone https://github.com/<YOUR GITHUB HANDLE>/${APP_NAME}.git
+cd ${APP_NAME}
 git init
-git remote add aws https://git-codecommit.${AWS_REGION}.amazonaws.com/v1/repos/c1-app-sec-uploader
+git remote add aws https://git-codecommit.${AWS_REGION}.amazonaws.com/v1/repos/${APP_NAME}
 ```
 
 Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your Git username.
@@ -457,11 +467,11 @@ Now we are going to create the AWS CodePipeline using AWS CloudFormation.
 Still in our source directory, download and review the stack definition. Just look, do not change anything now.
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-aws/snippets/c1-app-sec-uploader-pipeline.cfn.yml --output c1-app-sec-uploader-pipeline.cfn.yml
+curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-aws/snippets/${APP_NAME}-pipeline.cfn.yml --output ${APP_NAME}-pipeline.cfn.yml
 
 # or
 
-curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/c1-app-sec-uploader-pipeline.cfn.yml --output c1-app-sec-uploader-pipeline.cfn.yml
+curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/${APP_NAME}-pipeline.cfn.yml --output ${APP_NAME}-pipeline.cfn.yml
 ```
 
 You will realize a couple of chapters. First are the `Parameters` for the pipeline, which you can either leave with the defaults or customize.
@@ -480,25 +490,25 @@ Do the parameter expansion.
 ```shell
 export DSSC_HOST=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 export CLUSTER_NAME=$(eksctl get cluster -o json | jq -r '.[].name')
-export IMAGE_NAME=c1-app-sec-uploader
+export IMAGE_NAME=${APP_NAME}
 export IMAGE_TAG=latest
 
 eval "cat <<EOF
-$(<c1-app-sec-uploader-pipeline.cfn.yml)
+$(<${APP_NAME}-pipeline.cfn.yml)
 EOF
-" 2> /dev/null > c1-app-sec-uploader-pipeline.cfn.yml
+" 2> /dev/null > ${APP_NAME}-pipeline.cfn.yml
 ```
 
 Validate the stack
 
 ```shell
-aws cloudformation validate-template --template-body file://c1-app-sec-uploader-pipeline.cfn.yml
+aws cloudformation validate-template --template-body file://${APP_NAME}-pipeline.cfn.yml
 ```
 
 If you get a nice JSON, create the stack
 
 ```shell
-aws cloudformation deploy --stack-name c1-app-sec-uploader-pipeline --template-file c1-app-sec-uploader-pipeline.cfn.yml --capabilities CAPABILITY_IAM
+aws cloudformation deploy --stack-name ${APP_NAME}-pipeline --template-file ${APP_NAME}-pipeline.cfn.yml --capabilities CAPABILITY_IAM
 ```
 
 ### Create the Buildspec
@@ -555,7 +565,7 @@ Whenever you change something in the CodeCommit repo, the pipeline will rerun.
 If the pipeline did sucessfully finish, you can retrieve the URL for our music uploader with the following command:
 
 ```shell
-kubectl get svc -n default c1-app-sec-uploader -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+kubectl get svc -n default ${APP_NAME} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
 
 Done. So, let's upload some music files :-)
