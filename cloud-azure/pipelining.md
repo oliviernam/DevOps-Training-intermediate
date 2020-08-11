@@ -94,7 +94,6 @@ Define some variables
 ```shell
 export DSSC_NAMESPACE='smartcheck'
 export DSSC_USERNAME='administrator'
-export DSSC_TEMPPW='justatemppw'
 export DSSC_PASSWORD='trendmicro'
 export DSSC_REGUSER='administrator'
 export DSSC_REGPASSWORD='trendmicro'
