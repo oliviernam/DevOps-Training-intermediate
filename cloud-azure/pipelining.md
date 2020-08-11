@@ -369,10 +369,6 @@ Whenever you're done with the resources you created above, you can use the follo
 az group delete --name ${APP_NAME}
 ```
 
-```shell
-az group delete --name MC_${APP_NAME}_myapp_germanywestcentral
-```
-
 ## Learn more
 
 We invite you to learn more about:
