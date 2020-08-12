@@ -1,6 +1,7 @@
 # Theory
 
 - [Theory](#theory)
+  - [ToDos](#todos)
   - [Tools](#tools)
   - [Services](#services)
     - [Cloud9](#cloud9)
@@ -28,7 +29,12 @@
     - [ARN](#arn)
     - [t3.small etc.](#t3small-etc)
 
-This document covers most of the technologies and AWS services used within the CI/CD Pipelining Lab on AWS. Lot's of links for more in depth information are given, whereby the potentialls most relevant one is this: [AWS Documentation](https://docs.aws.amazon.com/index.html).
+This document covers most of the technologies and AWS services used within the CI/CD Pipelining Lab on AWS. Lot's of links for more in depth information are given, whereby the potentially most relevant one is this: [AWS Documentation](https://docs.aws.amazon.com/index.html).
+
+## ToDos
+
+- ECR
+- ECR Scan on Push
 
 ## Tools
 
