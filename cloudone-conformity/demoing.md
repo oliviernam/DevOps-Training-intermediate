@@ -42,11 +42,11 @@ Important for demoing `CC`, **login to your AWS!**
   - **overview on risk, succeeds and failures**
 - Geographical spread etc.
 
-![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/01_high_level_overview.png "High Level Overview")
+![alt text](images/01_high_level_overview.png "High Level Overview")
 
 ### Now Begin Digging in
 
-![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/02_browse_all_checks.png "Browse all Checks")
+![alt text](images/02_browse_all_checks.png "Browse all Checks")
 
 - **Dashboard --> Browse all checks**
   - High level overview what's surfaced on your accounts
@@ -60,7 +60,7 @@ Important for demoing `CC`, **login to your AWS!**
   - It's now reasonable to address
   - Optionally, you can generate a **report** with Selected Services Security Only
   - Go to **S3 Bucker Default Encryption**
-  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/03_s3_bucket_default_encryption.png "S3 Bucket Default Encryption")
+  ![alt text](images/03_s3_bucket_default_encryption.png "S3 Bucket Default Encryption")
     - Here we do have underneeth the checks taken out associated to that account
     - `CC` tells about the **context**
     - Direct **Link** to the ressource - brings you to the resource in AWS
@@ -73,17 +73,17 @@ Important for demoing `CC`, **login to your AWS!**
 ### Rule Configuration
 
   - **Dashboard --> Settings --> Configure now**
-  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/04_rule_settings.png "Rule Settings")
+  ![alt text](images/04_rule_settings.png "Rule Settings")
     - Filter for `non-active rules`, and `Requires configuration check`
     - Search for `regions`
-    ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/05_rule_regions.png "Rule Regions")
+    ![alt text](images/05_rule_regions.png "Rule Regions")
     - Most of the rules are active by default, but one can **customize*- the active rules or configure custom rules
       - e.g. User activity in blacklisted regions
         - blacklist everything outside europe as an example
   - All rules can be configured
     - e.g. there are **very valid reasons** why you might want public read access to an s3 bucket (e.g. public web site)
     - Filter Services for `S3`
-    ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/06_rule_s3_bucket_read_access.png "Rule S3 Bucket Read Access")
+    ![alt text](images/06_rule_s3_bucket_read_access.png "Rule S3 Bucket Read Access")
     - S3 Bucket Public 'READ' Access
       - do exceptions here (S3 bucket name even with regex or tags)
     - Eliminating false positives
@@ -92,7 +92,7 @@ Important for demoing `CC`, **login to your AWS!**
 
   - **Dashboard Menubar --> Profiles**
   - An accounts configuration should be saved as a profile
-  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/07_profiles.png "Profiles")
+  ![alt text](images/07_profiles.png "Profiles")
     - Profiles - Baseline
       - All configurations are now saved as a new profile
   - Accounts can be grouped
@@ -102,7 +102,7 @@ Important for demoing `CC`, **login to your AWS!**
 ### Reports
 
   - **Dashboard --> Reports...**
-  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/08_configured_reports.png "Configured Reports")
+  ![alt text](images/08_configured_reports.png "Configured Reports")
   - New Report...
     - Same filtering but here you can save your filter options and define the report
     - Schedule them
@@ -115,7 +115,7 @@ Important for demoing `CC`, **login to your AWS!**
 ### Communication
 
   - **Dashboard --> Settings (top right) --> Update communication settings...**
-  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/09_communication_settings.png "Update Communication Settings")
+  ![alt text](images/09_communication_settings.png "Update Communication Settings")
   - CC is designed that you don't need to login day by day.
     - for that we have the communication settings which allows us to integrate into various systems
     - there is really no reason to logon anymore
@@ -129,12 +129,12 @@ Important for demoing `CC`, **login to your AWS!**
 ### Real Time Monitoring
 
   - **Dashboard --> Threat monitoring**
-  ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/10_threat_monitoring.png "Threat Monitoring")
+  ![alt text](images/10_threat_monitoring.png "Threat Monitoring")
   - Essentially it is a connection to `AWS CloudTrail` and `AWS CloudWatch`
   - `CC` is receiving a copy of the events
     - **Open activity Dashboard**
-    ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/11_user_activity.png "User Activity")
+    ![alt text](images/11_user_activity.png "User Activity")
     - **Open monitoring dashboard**
-    ![alt text](https://github.com/mawinkler/devops-training/blob/master/cloudone-conformity/images/12_real_time_monitoring.png "Real-Time Monitoring")
+    ![alt text](images/12_real_time_monitoring.png "Real-Time Monitoring")
 
 That was a very brief overview about CloudOne Conformity
