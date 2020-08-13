@@ -3,22 +3,23 @@
 - [CI/CD with GCP Cloud Build](#cicd-with-gcp-cloud-build)
   - [TODO](#todo)
   - [Prerequisites](#prerequisites)
-  - [Create a Workspace](#create-a-workspace)
-  - [Prepare for our GKE Cluster](#prepare-for-our-gke-cluster)
-  - [Create GKE Cluster](#create-gke-cluster)
+  - [Create the GCP resources](#create-the-gcp-resources)
+    - [Create a Workspace](#create-a-workspace)
+    - [Prepare for our GKE Cluster](#prepare-for-our-gke-cluster)
+    - [Create GKE Cluster](#create-gke-cluster)
   - [Deploy CloudOne Image Security](#deploy-cloudone-image-security)
-  - [Create Repository to Host the App Code](#create-repository-to-host-the-app-code)
+  - [Configure CloudOne Application Security](#configure-cloudone-application-security)
+  - [Prepare the Cloud Build, Publishing and Kubernetes Deployment](#prepare-the-cloud-build-publishing-and-kubernetes-deployment)
     - [Fork Sample Repository](#fork-sample-repository)
     - [Create a Cloud Source Repository](#create-a-cloud-source-repository)
-  - [Prepare the Cloud Build, Publishing and Kubernetes Deployment](#prepare-the-cloud-build-publishing-and-kubernetes-deployment)
     - [Create Kubernetes Deployment and Service Definition](#create-kubernetes-deployment-and-service-definition)
     - [Create the Build Trigger](#create-the-build-trigger)
     - [Create the Build Specification cloudbuild.yaml](#create-the-build-specification-cloudbuildyaml)
-    - [Manually trigger the pipeline](#manually-trigger-the-pipeline)
-    - [Manually build and push](#manually-build-and-push)
   - [Trigger the Pipeline](#trigger-the-pipeline)
   - [Knowledge](#knowledge)
     - [Cloud Builders](#cloud-builders)
+    - [Manually trigger the pipeline](#manually-trigger-the-pipeline)
+    - [Manually build and push](#manually-build-and-push)
     - [Delete a cluster](#delete-a-cluster)
     - [Troubleshoot Google Cloud Build](#troubleshoot-google-cloud-build)
   - [Pipelines](#pipelines)
@@ -29,7 +30,6 @@
 
 ## TODO
 
-- Integrate Application Security to the Lab
 - Solve Certificate issue
 
 ## Prerequisites
@@ -38,7 +38,9 @@
 - Cloud Build, Google Cloud’s continuous integration (CI) and continuous delivery (CD) platform, lets you build software quickly across all languages. Get complete control over defining custom workflows for building, testing, and deploying across multiple environments such as VMs, serverless, Kubernetes, or Firebase.
 - Google Container Registry provides secure, private Docker repository storage on Google Cloud Platform. You can use gcloud to push images to your registry , then you can pull images using an HTTP endpoint from any machine, whether it's a Google Compute Engine instance or your own hardware. Learn more
 
-## Create a Workspace
+## Create the GCP resources
+
+### Create a Workspace
 
 From the Cloud Console, click Activate Cloud Shell `>_`
 
@@ -54,7 +56,7 @@ gcloud auth list
 
 Note: The gcloud command-line tool is the powerful and unified command-line tool in Google Cloud. It comes preinstalled in Cloud Shell. You will notice its support for tab completion. For more information, see gcloud command-line tool overview.
 
-## Prepare for our GKE Cluster
+### Prepare for our GKE Cluster
 
 Set up some variables.
 
@@ -116,7 +118,7 @@ And finally enable the API.
 gcloud services enable compute.googleapis.com
 ```
 
-## Create GKE Cluster
+### Create GKE Cluster
 
 Start your cluster with three nodes.
 
@@ -178,7 +180,16 @@ export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.
 export DSSC_HOST="https://smartcheck-${DSSC_HOST_IP//./-}.nip.io"
 ```
 
-## Create Repository to Host the App Code
+## Configure CloudOne Application Security
+
+Define the Application Security Key and Secret.
+
+```shell
+export TREND_AP_KEY=<YOUR CLOUD ONE APPLICATION SECURITY KEY>
+export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET>
+```
+
+## Prepare the Cloud Build, Publishing and Kubernetes Deployment
 
 ### Fork Sample Repository
 
@@ -222,9 +233,11 @@ git push gcp master
 The repository can be accessed via
 <https://source.developers.google.com/p/${PROJECT}/r/${APP_NAME}>
 
-## Prepare the Cloud Build, Publishing and Kubernetes Deployment
-
 ### Create Kubernetes Deployment and Service Definition
+
+In the next chapters, we're defining everything which is required to run the pipeline in GCP Cloud Build. This includes the integration of Image Security and Application Security, of course.
+
+First, we create our deployment and service manifests.
 
 ```shell
 export IMAGE_NAME=${APP_NAME}
@@ -271,6 +284,11 @@ spec:
       containers:
       - name: ${IMAGE_NAME}
         image: gcr.io/PROJECT/IMAGE_NAME:IMAGE_TAG
+        env:
+        - name: TREND_AP_KEY
+          value: _TREND_AP_KEY
+        - name: TREND_AP_SECRET
+          value: _TREND_AP_SECRET
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
@@ -279,7 +297,7 @@ EOF
 
 ### Create the Build Trigger
 
-Set up a build trigger to watch for changes.
+Here, we set up a build trigger to watch for changes in the source code version control system.
 
 ```shell
 cat <<EOF > build-trigger.json
@@ -298,6 +316,8 @@ cat <<EOF > build-trigger.json
     "_CLOUDONE_IMAGESECURITY_PASSWORD": "${DSSC_PASSWORD}",
     "_CLOUDONE_PRESCAN_USER": "${DSSC_REGUSER}",
     "_CLOUDONE_PRESCAN_PASSWORD": "${DSSC_REGPASSWORD}"
+    "_CLOUDONE_TREND_AP_KEY": "${TREND_AP_KEY}"
+    "_CLOUDONE_TREND_AP_SECRET": "${TREND_AP_SECRET}"
   },
   "filename": "cloudbuild.yaml"
 }
@@ -314,104 +334,25 @@ Review Triggers here: <https://console.cloud.google.com/gcr/triggers>
 
 ### Create the Build Specification cloudbuild.yaml
 
-Create a file `cloudbuild.yaml` and copy and paste the following content
+Lastly, we create the heart of the pipeline, the `cloudbuild.yaml`.
+
+Still in our source directory, download and review the pipeline definition. Just look, do not change anything now.
 
 ```shell
-cat <<EOF > cloudbuild.yaml
-steps:
+curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-gcp/snippets/cloudbuild.yaml --output $cloudbuild.yaml
 
-### Build
+# or
 
-  - id: 'build'
-    name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-          docker build -t gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} .
+curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/cloudbuild.yaml --output cloudbuild.yaml
+```
 
-### Scan
+Populate the paramentes.
 
-  - id: 'scan'
-    name: 'gcr.io/cloud-builders/docker'
-    env:
-      - 'CLOUDONE_IMAGESECURITY_HOST=\${_CLOUDONE_IMAGESECURITY_HOST}'
-      - 'CLOUDONE_IMAGESECURITY_USER=\${_CLOUDONE_IMAGESECURITY_USER}'
-      - 'CLOUDONE_IMAGESECURITY_PASSWORD=\${_CLOUDONE_IMAGESECURITY_PASSWORD}'
-      - 'CLOUDONE_PRESCAN_USER=\${_CLOUDONE_PRESCAN_USER}'
-      - 'CLOUDONE_PRESCAN_PASSWORD=\${_CLOUDONE_PRESCAN_PASSWORD}'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-          openssl s_client -showcerts -connect \$\${CLOUDONE_IMAGESECURITY_HOST}:443 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > smcert.crt
-          sudo cp smcert.crt /usr/local/share/ca-certificates/\$\${CLOUDONE_IMAGESECURITY_HOST}.crt
-          sudo mkdir -p /etc/docker/certs.d/\$\${CLOUDONE_IMAGESECURITY_HOST}:5000
-          sudo cp smcert.crt /etc/docker/certs.d/\$\${CLOUDONE_IMAGESECURITY_HOST}:5000/ca.crt
-          sudo update-ca-certificates
-
-          docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.cache:/root/.cache/ deepsecurity/smartcheck-scan-action \
-          --preregistry-scan \
-          --preregistry-password=\$\${CLOUDONE_PRESCAN_PASSWORD} \
-          --preregistry-user=\$\${CLOUDONE_PRESCAN_USER} \
-          --image-name=gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} \
-          --smartcheck-host=\$\${CLOUDONE_IMAGESECURITY_HOST} \
-          --smartcheck-user=\$\${CLOUDONE_IMAGESECURITY_USER} \
-          --smartcheck-password=\$\${CLOUDONE_IMAGESECURITY_PASSWORD} \
-          --insecure-skip-tls-verify \
-          --insecure-skip-registry-tls-verify \
-          --findings-threshold='{"malware": 0, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
-
-### Publish
-  - id: 'publish'
-    name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-          docker push gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
-
-### Deploy
-  - id: 'deploy'
-    name: 'gcr.io/cloud-builders/gcloud'
-    env:
-      - 'CLOUDSDK_COMPUTE_ZONE=\${_CLOUDSDK_COMPUTE_ZONE}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=\${_CLOUDSDK_CONTAINER_CLUSTER}'
-      - 'KUBECONFIG=/kube/config'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-          CLUSTER=\$\$(gcloud config get-value container/cluster)
-          PROJECT=\$\$(gcloud config get-value core/project)
-          ZONE=\$\$(gcloud config get-value compute/zone)
-
-          gcloud container clusters get-credentials "$\${CLUSTER}" \
-            --project "\$\${PROJECT}" \
-            --zone "\$\${ZONE}"  
-
-          sed -i 's|gcr.io/PROJECT/IMAGE_NAME:IMAGE_TAG|gcr.io/$PROJECT/$IMAGE_NAME:$IMAGE_TAG|' ./app-gcp.yml
-
-          kubectl get ns $IMAGE_NAME || kubectl create ns $IMAGE_NAME
-          kubectl apply --namespace $IMAGE_NAME -f app-gcp.yml
+```shell
+eval "cat <<EOF
+$(<cloudbuild.yaml)
 EOF
-```
-
-### Manually trigger the pipeline
-
-```shell
-# by config
-gcloud builds submit --config cloudbuild.yaml .
-
-# by trigger
-gcloud alpha builds triggers run master --branch=master
-```
-
-### Manually build and push
-
-```shell
-# by tag
-gcloud builds submit --tag gcr.io/${PROJECT}/${IMAGE_NAME}
+" 2> /dev/null > cloudbuild.yaml
 ```
 
 ## Trigger the Pipeline
@@ -437,6 +378,23 @@ Cloud builders are container images with common languages and tools installed in
 This page describes the types of builders that you can use with Cloud Build.
 
 <https://cloud.google.com/cloud-build/docs/cloud-builders>
+
+### Manually trigger the pipeline
+
+```shell
+# by config
+gcloud builds submit --config cloudbuild.yaml .
+
+# by trigger
+gcloud alpha builds triggers run master --branch=master
+```
+
+### Manually build and push
+
+```shell
+# by tag
+gcloud builds submit --tag gcr.io/${PROJECT}/${IMAGE_NAME}
+```
 
 ### Delete a cluster
 

@@ -1,0 +1,125 @@
+# Deploy to Azure Kubernetes Service
+# Build and push image to Azure Container Registry; Deploy to Azure Kubernetes Service
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+- master
+
+resources:
+- repo: self
+
+variables:
+
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: 'f3b74647-1710-4aa0-abfc-4da499cbc745'
+  imageRepository: 'cappsecuploader'
+  containerRegistry: 'c1appsecuploaderregistry2.azurecr.io'
+  dockerfilePath: '**/Dockerfile'
+  tag: '$(Build.BuildId)'
+  imagePullSecret: 'c1appsecuploaderregistry2f127-auth'
+
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
+  
+  cloudOne_imageSecurityHost: smartcheck-51-105-203-36.nip.io
+  cloudOne_imageSecurityUser: administrator
+  cloudOne_imageSecurityPassword: trendmicro
+  cloudOne_preScanUser: administrator
+  cloudOne_preScanPassword: trendmicro
+
+  cloudOne_applicationSecurityKey: 040beea0-3efc-4699-8c95-cadf21b01545
+  cloudOne_applicationSecuritySecret: 5d8b9064-caf4-4c59-8d56-ed01552ad854
+
+stages:
+- stage: Build
+  displayName: Build stage
+  jobs:  
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: Docker@2
+      displayName: Build an image
+      inputs:
+        command: build
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+          
+    # Scan the Container Image using Cloud One Container Security
+    - script: |
+        openssl s_client -showcerts -connect $(cloudOne_imageSecurityHost):443 < /dev/null | \
+          sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > $(cloudOne_imageSecurityHost).crt
+        sudo cp $(cloudOne_imageSecurityHost).crt /usr/local/share/ca-certificates/$(cloudOne_imageSecurityHost).crt
+        sudo mkdir -p /etc/docker/certs.d/$(cloudOne_imageSecurityHost):5000
+        sudo cp $(cloudOne_imageSecurityHost).crt /etc/docker/certs.d/$(cloudOne_imageSecurityHost):5000/ca.crt
+
+        sudo update-ca-certificates
+
+        docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME:/root/.cache/ deepsecurity/smartcheck-scan-action \
+        --preregistry-scan \
+        --preregistry-password=$(cloudOne_preScanPassword) \
+        --preregistry-user=$(cloudOne_preScanUser) \
+        --image-name=$(containerRegistry)/$(imageRepository):$(tag) \
+        --smartcheck-host=$(cloudOne_imageSecurityHost) \
+        --smartcheck-user=$(cloudOne_imageSecurityUser) \
+        --smartcheck-password=$(cloudOne_imageSecurityPassword) \
+        --insecure-skip-tls-verify \
+        --insecure-skip-registry-tls-verify \
+        --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 30, "high": 10 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
+      displayName: "Scan an image"
+
+    - task: Docker@2
+      displayName: Push an image to container registry
+      inputs:
+        command: push
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+
+    - upload: manifests
+      artifact: manifests
+
+- stage: Deploy
+  displayName: Deploy stage
+  dependsOn: Build
+
+  jobs:
+  - deployment: Deploy
+    displayName: Deploy
+    pool:
+      vmImage: $(vmImageName)
+    environment: 'mawinklerc1appsecuploader-1012.appcluster-default-1871'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: KubernetesManifest@0
+            displayName: Create imagePullSecret
+            inputs:
+              action: createSecret
+              secretName: $(imagePullSecret)
+              dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
+
+          # Set Environment Variables for Cloud One Application Security
+          - script: |
+              sed -i 's|_TREND_AP_KEY|$(cloudOne_applicationSecurityKey)|' $(Pipeline.Workspace)/manifests/deployment.yml
+              sed -i 's|_TREND_AP_SECRET|$(cloudOne_applicationSecuritySecret)|' $(Pipeline.Workspace)/manifests/deployment.yml
+            displayName: "Configure Cloud One Application Security"
+
+          - task: KubernetesManifest@0
+            displayName: Deploy to Kubernetes cluster
+            inputs:
+              action: deploy
+              manifests: |
+                $(Pipeline.Workspace)/manifests/deployment.yml
+                $(Pipeline.Workspace)/manifests/service.yml
+              imagePullSecrets: |
+                $(imagePullSecret)
+              containers: |
+                $(containerRegistry)/$(imageRepository):$(tag)
