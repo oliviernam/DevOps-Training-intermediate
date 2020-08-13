@@ -114,7 +114,7 @@ done
 
 printf ' - %s\n' "${DSSC_HOST}"
 
-if [ ! -f pwchanged ];
+if [ ! -f ~/pwchanged ];
 then
   printf '%s' "Authenticate to Cloud One Image Security"
 
@@ -149,7 +149,7 @@ then
           -d "{  \"oldPassword\": \"${DSSC_TEMPPW}\", \"newPassword\": \"${DSSC_PASSWORD}\"  }"`
 
   printf ' - %s\n' "done"
-  touch pwchanged
+  touch ~/pwchanged
 fi
 
 
