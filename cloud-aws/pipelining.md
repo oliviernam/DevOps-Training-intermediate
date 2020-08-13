@@ -2,6 +2,7 @@
 
 - [CI/CD with AWS CodePipeline](#cicd-with-aws-codepipeline)
   - [Prerequisites](#prerequisites)
+  - [Variable definitions](#variable-definitions)
   - [Create a Workspace](#create-a-workspace)
     - [Install Kubernetes tools](#install-kubernetes-tools)
     - [Update IAM Settings for the Workspace](#update-iam-settings-for-the-workspace)
@@ -33,6 +34,29 @@
 - A GitHub account, where you can create a repository. If you don't have one, you can create one for free.
 - An AWS account
 - A CloudOne Application Security Account
+
+## Variable definitions
+
+During the lab, you're defining the following variables:
+
+```shell
+export ROLE_NAME=ekscluster-admin
+export INSTANCE_PROFILE_NAME=${ROLE_NAME}
+export CLUSTER_NAME=ekscluster-eksctl
+export CODEBUILD_ROLE_NAME=ekscluster-codebuild
+export APP_NAME=c1-app-sec-uploader
+
+
+export DSSC_NAMESPACE='smartcheck'
+export DSSC_USERNAME='administrator'
+export DSSC_PASSWORD='trendmicro'
+export DSSC_REGUSER='administrator'
+export DSSC_REGPASSWORD='trendmicro'
+export DSSC_AC=<SMART CHECK ACTIVATION CODE>
+
+export TREND_AP_KEY=<YOUR CLOUD ONE APPLICATION SECURITY KEY>
+export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET>
+```
 
 ## Create a Workspace
 
@@ -242,14 +266,14 @@ aws ec2 import-key-pair --key-name "ekscluster" --public-key-material fileb://~/
 Create a CMK for the EKS cluster to use when encrypting your Kubernetes secrets:
 
 ```shell
-ALIAS_NAME="alias/ekscluster"
-aws kms create-alias --alias-name ${ALIAS_NAME} --target-key-id $(aws kms create-key --query KeyMetadata.Arn --output text)
+KEY_ALIAS_NAME="alias/ekscluster"
+aws kms create-alias --alias-name ${KEY_ALIAS_NAME} --target-key-id $(aws kms create-key --query KeyMetadata.Arn --output text)
 ```
 
 Let’s retrieve the ARN of the CMK to input into the create cluster command.
 
 ```shell
-export MASTER_ARN=$(aws kms describe-key --key-id ${ALIAS_NAME} --query KeyMetadata.Arn --output text)
+export MASTER_ARN=$(aws kms describe-key --key-id ${KEY_ALIAS_NAME} --query KeyMetadata.Arn --output text)
 ```
 
 We set the MASTER_ARN environment variable to make it easier to refer to the KMS key later.
@@ -359,7 +383,7 @@ export DSSC_REGPASSWORD='trendmicro'
 Set the activation code for Smart Check
 
 ```shell
-export DSSC_AC=<activation code>
+export DSSC_AC=<SMART CHECK ACTIVATION CODE>
 ```
 
 Finally, run
