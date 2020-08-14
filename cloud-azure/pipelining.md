@@ -6,8 +6,8 @@
   - [Get the code](#get-the-code)
   - [Create the Azure resources](#create-the-azure-resources)
     - [Create a Resource Group](#create-a-resource-group)
-    - [Create a container registry](#create-a-container-registry)
-    - [Create a Kubernetes cluster](#create-a-kubernetes-cluster)
+    - [Create a Container Registry](#create-a-container-registry)
+    - [Create a Kubernetes Cluster](#create-a-kubernetes-cluster)
   - [Deploy CloudOne Image Security](#deploy-cloudone-image-security)
   - [Configure CloudOne Application Security](#configure-cloudone-application-security)
   - [Build the Azure Pipeline](#build-the-azure-pipeline)
@@ -78,14 +78,14 @@ export APP_NAME=c1-app-sec-uploader
 az group create --name ${APP_NAME} --location westeurope
 ```
 
-### Create a container registry
+### Create a Container Registry
 
 ```shell
 export APP_REGISTRY=c1appsecuploaderregistry
 az acr create --resource-group ${APP_NAME} --name ${APP_REGISTRY} --sku Basic
 ```
 
-### Create a Kubernetes cluster
+### Create a Kubernetes Cluster
 
 ```shell
 export CLUSTER_NAME=appcluster
@@ -278,6 +278,7 @@ Do you want to view/edit the template yaml before proceeding?
 Please enter a choice [Default choice(1)]: `Continue with generated yaml`
 
 Files to be added to your repository (3)
+
 1) manifests/deployment.yml
 2) manifests/service.yml
 3) azure-pipelines.yml
@@ -299,7 +300,7 @@ Done, puuh.
 
 ### Fix deployment.yml
 
-As of writing the lab, there seems to be an error in the deployment.yml generation.
+As of writing the lab, there is an error in the deployment.yml generation.
 
 To fix it do the following:
 
@@ -512,7 +513,7 @@ metadata:
 spec:
     type: LoadBalancer
     ports:
-    - port: 80 
+    - port: 80
     selector:
         app: cappsecuploader
 ```
