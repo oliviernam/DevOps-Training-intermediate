@@ -22,9 +22,9 @@
   - [Learn more](#learn-more)
   - [Additional Resources](#additional-resources)
   - [Appendix](#appendix)
-    - [`manifests/deployment.yml`](#manifestsdeploymentyml)
-    - [`manifests/service.yml`](#manifestsserviceyml)
-    - [`azure-pipelines.yml`](#azure-pipelinesyml)
+    - [Example `manifests/deployment.yml`](#example-manifestsdeploymentyml)
+    - [Example `manifests/service.yml`](#example-manifestsserviceyml)
+    - [Example `azure-pipelines.yml`](#example-azure-pipelinesyml)
     - [Clean up resources](#clean-up-resources)
   - [Azure Commands](#azure-commands)
   - [Create the Pipeline (UI Path)](#create-the-pipeline-ui-path)
@@ -473,7 +473,7 @@ We invite you to learn more about:
 
 ## Appendix
 
-### `manifests/deployment.yml`
+### Example `manifests/deployment.yml`
 
 ```yaml
 apiVersion: apps/v1
@@ -502,7 +502,7 @@ spec:
           - containerPort: 80
 ```
 
-### `manifests/service.yml`
+### Example `manifests/service.yml`
 
 ```yaml
 apiVersion: v1
@@ -517,7 +517,7 @@ spec:
         app: cappsecuploader
 ```
 
-### `azure-pipelines.yml`
+### Example `azure-pipelines.yml`
 
 ```yaml
 # Deploy to Azure Kubernetes Service
