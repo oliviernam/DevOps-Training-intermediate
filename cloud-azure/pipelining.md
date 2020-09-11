@@ -130,7 +130,7 @@ export DSSC_REGPASSWORD='trendmicro'
 Set the activation code for Smart Check
 
 ```shell
-export DSSC_AC=<SMART CHECK ACTIVATION CODE>dev
+export DSSC_AC=<SMART CHECK ACTIVATION CODE>
 ```
 
 Finally, run
@@ -171,6 +171,12 @@ Now open the `User settings` (top right) and go to `Security` --> `Personal acce
 Press `New Token`. Give the Token a name (e.g. `MyToken`), set Organization to `All accessible organizations` and Expiration to something >= 30 days. Set the Scope to `Full access`.
 
 Copy the token and store it somewhere secure.
+
+```shell
+export AZURE_DEVOPS_EXT_PAT=<YOUR_PAT>
+```
+
+To store it in the environment.
 
 ### Create a project
 
@@ -332,17 +338,60 @@ Your full deployment.yml is shown in the appendix [`manifests/deployment.yml`](#
 
 ### Variable definitions for the pipeline
 
-Define the following variables required for the scan action within the variables section of your pipeline (top right). Of course, you should keep the values for passwords secret. If you chose to use a different username / password above, use these of course.
+Define the following variables required for the scan action within the variables section of your pipeline.
 
-```yaml
-  cloudOne_imageSecurityHost: ${DSSC_HOST}
-  cloudOne_imageSecurityUser: ${DSSC_USERNAME}
-  cloudOne_imageSecurityPassword: ${DSSC_PASSWORD}
-  cloudOne_preScanUser: ${DSSC_REGUSER}
-  cloudOne_preScanPassword: ${DSSC_REGPASSWORD}
+```shell
+az pipelines variable create \
+  --name cloudOne_imageSecurityHost \
+  --pipeline-name ${APP_NAME} \
+  --org ${DEVOPS_ORGANIZATION} \
+  --project ${APP_NAME} \
+  --value ${DSSC_HOST}
 
-  cloudOne_applicationSecurityKey: ${TREND_AP_KEY}
-  cloudOne_applicationSecuritySecret: ${TREND_AP_SECRET}
+az pipelines variable create \
+  --name cloudOne_imageSecurityUser \
+  --pipeline-name ${APP_NAME} \
+  --org ${DEVOPS_ORGANIZATION} \
+  --project ${APP_NAME} \
+  --value ${DSSC_USERNAME}
+
+az pipelines variable create \
+  --name cloudOne_imageSecurityPassword \
+  --pipeline-name ${APP_NAME} \
+  --org ${DEVOPS_ORGANIZATION} \
+  --project ${APP_NAME} \
+  --value ${DSSC_PASSWORD} \
+  --secret true
+
+az pipelines variable create \
+  -name cloudOne_preScanUser \
+  --pipeline-name ${APP_NAME} \
+  --org ${DEVOPS_ORGANIZATION} \
+  --project ${APP_NAME} \
+  --value ${DSSC_REGUSER}
+
+az pipelines variable create \
+  --name cloudOne_preScanPassword \
+  --pipeline-name ${APP_NAME} \
+  --org ${DEVOPS_ORGANIZATION} \
+  --project ${APP_NAME} \
+  --value ${DSSC_REGPASSWORD} \
+  --secret true
+
+az pipelines variable create \
+  --name cloudOne_applicationSecurityKey \
+  --pipeline-name ${APP_NAME} \
+  --org ${DEVOPS_ORGANIZATION} \
+  --project ${APP_NAME} \
+  --value ${TREND_AP_KEY}
+
+az pipelines variable create \
+  --name cloudOne_applicationSecuritySecret \
+  --pipeline-name ${APP_NAME} \
+  --org ${DEVOPS_ORGANIZATION} \
+  --project ${APP_NAME} \
+  --value ${TREND_AP_SECRET} \
+  --secret true
 ```
 
 ### Integrate Application Security in the deployment manifest
