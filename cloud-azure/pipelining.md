@@ -13,6 +13,8 @@
   - [Build the Azure Pipeline](#build-the-azure-pipeline)
     - [Create a PAT](#create-a-pat)
     - [Create a project](#create-a-project)
+    - [Fork Sample Repository](#fork-sample-repository)
+    - [Create a Source Code Repository](#create-a-source-code-repository)
     - [Create the pipeline](#create-the-pipeline)
     - [Fix deployment.yml](#fix-deploymentyml)
   - [Integrate Image Security and Application Security into the pipeline](#integrate-image-security-and-application-security-into-the-pipeline)
@@ -211,19 +213,50 @@ az devops project create \
   --org ${DEVOPS_ORGANIZATION}
 ```
 
+### Create and Populate the Source Code Repository
+
+```shell
+#az repos create \
+#  --name ${APP_NAME} \
+#  --org ${DEVOPS_ORGANIZATION} \
+#  --project ${APP_NAME}
+```
+
+**TO IMPROVE WITHIN THE LAB: ** Get your repo credentials via the Azure DevOps UI.
+
+```shell
+git init
+git remote add azure ${DEVOPS_ORGANIZATION}/${APP_NAME}/_git/${APP_NAME}
+```
+
+Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your Git username.
+
+```shell
+git config --global user.email "[EMAIL_ADDRESS]"
+git config --global user.name "[USERNAME]"
+```
+
+And finally add all the files and folders recursively to the Cloud Source Repository.
+
+```shell
+git add .
+git commit -m "Initial commit"
+git push azure master
+```
+
 ### Create the pipeline
 
 Next step is to create our pipeline to build, scan, push and deploy the app to the AKS cluster. Do this by
 
 ```shell
-export GITHUB_USERNAME=<YOUR GITHUB USERNAME>
 az pipelines create \
   --name ${APP_NAME} \
   --branch master \
   --description 'Pipeline for the Uploader' \
   --org ${DEVOPS_ORGANIZATION} \
   --project ${APP_NAME} \
-  --repository https://github.com/${GITHUB_USERNAME}/${APP_NAME}
+  --repository-type tfsgit \
+  --repository ${DEVOPS_ORGANIZATION}/${APP_NAME}/_git/${APP_NAME}
 ```
 
 A little longish conversation should start...
@@ -231,18 +264,6 @@ A little longish conversation should start...
 `>>>`
 
 This command is in preview. It may be changed/removed in a future release.
-We need to create a Personal Access Token to communicate with GitHub. A new PAT with scopes (admin:repo_hook, repo, user) will be created.
-You can set the PAT in the environment variable (AZURE_DEVOPS_EXT_GITHUB_PAT) to avoid getting prompted.
-
-Enter your GitHub username (leave blank for using already generated PAT): `YOUR GITHUB USERNAME`
-
-Enter your GitHub password: `YOUR GITHUB PASSWORD`
-
-Confirm Enter your GitHub password: `YOUR GITHUB PASSWORD`
-
-Created new personal access token with scopes (admin:repo_hook, repo, user). Name: AzureDevopsCLIExtensionToken_20200811T121603345744 You can revoke this from your GitHub settings if thepipeline is no longer required.
-
-Enter a service connection name to create? `azure_connection`
 
 Which template do you want to use for this pipeline?
 
@@ -293,10 +314,10 @@ How do you want to commit the files to the repository?
 
 Please enter a choice [Default choice(1)]: `Commit directly to the master branch.`
 
-Checking in file manifests/deployment.yml in the Github repository `YOUR GITHUB USERNAME`/c1-app-sec-uploader
-Checking in file manifests/service.yml in the Github repository `YOUR GITHUB USERNAME`/c1-app-sec-uploader
-Checking in file azure-pipelines.yml in the Github repository `YOUR GITHUB USERNAME`/c1-app-sec-uploader
-Successfully created a pipeline with Name: c1-app-sec-uploader, Id: 9.
+Checking in file manifests/deployment.yml in the Azure repo c1-app-sec-uploader
+Checking in file manifests/service.yml in the Azure repo c1-app-sec-uploader
+Checking in file azure-pipelines.yml in the Azure repo c1-app-sec-uploader
+Successfully created a pipeline with Name: c1-app-sec-uploader, Id: 13.
 
 { ... }
 
@@ -311,8 +332,7 @@ As of writing the lab, there is an error in the deployment.yml generation.
 To fix it do the following:
 
 ```shell
-git clone https://github.com/${GITHUB_USERNAME}/${APP_NAME}.git
-cd ${APP_NAME}
+git pull azure master
 code manifests/deployment.yml
 ```
 
@@ -364,7 +384,7 @@ az pipelines variable create \
   --secret true
 
 az pipelines variable create \
-  -name cloudOne_preScanUser \
+  --name cloudOne_preScanUser \
   --pipeline-name ${APP_NAME} \
   --org ${DEVOPS_ORGANIZATION} \
   --project ${APP_NAME} \
@@ -496,7 +516,7 @@ And finally add all the files and folders recursively to the CodeCommit Reposito
 
 ```shell
 git commit . -m "cloudone integrated"
-git push
+git push azure master
 ```
 
 ## Learn more
