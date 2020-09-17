@@ -1,7 +1,6 @@
 # CI/CD with GCP Cloud Build
 
 - [CI/CD with GCP Cloud Build](#cicd-with-gcp-cloud-build)
-  - [TODO](#todo)
   - [Prerequisites](#prerequisites)
   - [Create the GCP resources](#create-the-gcp-resources)
     - [Create a Workspace](#create-a-workspace)
@@ -27,15 +26,7 @@
     - [Delete a cluster](#delete-a-cluster)
     - [Troubleshoot Google Cloud Build](#troubleshoot-google-cloud-build)
 
-## TODO
-
-- Solve Certificate issue
-
 ## Prerequisites
-
-- Enable Cloud Build API
-- Cloud Build, Google Cloud’s continuous integration (CI) and continuous delivery (CD) platform, lets you build software quickly across all languages. Get complete control over defining custom workflows for building, testing, and deploying across multiple environments such as VMs, serverless, Kubernetes, or Firebase.
-- Google Container Registry provides secure, private Docker repository storage on Google Cloud Platform. You can use gcloud to push images to your registry , then you can pull images using an HTTP endpoint from any machine, whether it's a Google Compute Engine instance or your own hardware. Learn more
 
 ## Create the GCP resources
 
@@ -165,9 +156,9 @@ export GCR_SERVICE_ACCOUNT=service-gcrsvc
 
 gcloud iam service-accounts create ${GCR_SERVICE_ACCOUNT}
 
-gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:gcrsvc@${PROJECT}.iam.gserviceaccount.com" --role "roles/storage.admin"
+gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:${GCR_SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com" --role "roles/storage.admin"
 
-gcloud iam service-accounts keys create ${GCR_SERVICE_ACCOUNT}_keyfile.json --iam-account gcrsvc@${PROJECT}.iam.gserviceaccount.com
+gcloud iam service-accounts keys create ${GCR_SERVICE_ACCOUNT}_keyfile.json --iam-account ${GCR_SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com
 ```
 
 Your environment is ready!
@@ -243,7 +234,7 @@ EOF
 kubectl -n ${DSSC_NAMESPACE} apply -f smartcheck-managed-certificate.yml
 ```
 
-Next, we're defining the backend config for the health checks and
+Next, we're defining the backend config for the health check. This is done by an annotation to the proxy service of Smart Check.
 
 ```shell
 kubectl -n smartcheck annotate service proxy cloud.google.com/app-protocols='{"https":"HTTPS","http":"HTTP"}'
@@ -307,7 +298,25 @@ Events:
   Normal  Create  40s   managed-certificate-controller  Create SslCertificate mcrt-dbc47353-86ef-423a-9aa1-d064ecba4318
 ```
 
-The certificate status should change to `Active` after some time.
+The certificate status should change to `Active` after some time. Following this, the load balancer will finalize its configuration.
+
+Before continuing, please verify that you can access Smart Check with your browser and that it does have a valid certificate assigned. You don't need to authenticate yourself now. To get the address execute the following command:
+
+```shell
+echo "https://smartcheck-${DSSC_HOST//./-}.nip.io"
+```
+
+To finalize the setup of Smartcheck and do the initial password change run
+
+```shell
+curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-cpw.sh | bash
+```
+
+or
+
+```shell
+curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-cpw.sh | bash
+```
 
 Next, we add the Google Container Registry to Smart Check.
 
@@ -315,16 +324,16 @@ Next, we add the Google Container Registry to Smart Check.
 #!/bin/bash
 
 # Get bearertoken
-DSSC_BEARERTOKEN=$(curl -s -k -X POST https://${DSSC_HOST}/api/sessions -H "Content-Type: application/json"  -H "Api-Version: 2018-05-01" -H "cache-control: no-cache" -d "{\"user\":{\"userid\":\"${DSSC_USERNAME}\",\"password\":\"${DSSC_PASSWORD}\"}}" | jq '.token' | tr -d '"')
+export DSSC_BEARERTOKEN=$(curl -s -k -X POST https://${DSSC_HOST}/api/sessions -H "Content-Type: application/json"  -H "Api-Version: 2018-05-01" -H "cache-control: no-cache" -d "{\"user\":{\"userid\":\"${DSSC_USERNAME}\",\"password\":\"${DSSC_PASSWORD}\"}}" | jq '.token' | tr -d '"')
 
 # Read service keyfile
-DSSC_REG_GCR_JSON=$(cat service-gcrsvc_keyfile.json | jq tostring)
+export DSSC_REG_GCR_JSON=$(cat ${GCR_SERVICE_ACCOUNT}_keyfile.json | jq tostring)
 
 # Set filter
-DSSC_FILTER='*'
+export DSSC_FILTER='*'
 
 # Add registry
-curl -v -s -k -X POST https://$DSSC_HOST/api/registries?scan=true \
+curl -s -k -X POST https://$DSSC_HOST/api/registries?scan=true \
   -H "Content-Type: application/json" \
   -H "Api-Version: 2018-05-01" \
   -H "Authorization: Bearer $DSSC_BEARERTOKEN" \
@@ -354,7 +363,7 @@ And now clone it from your git:
 
 ```shell
 export APP_NAME=c1-app-sec-uploader
-export GITHUB_USERNAME=mawinkler
+export GITHUB_USERNAME="[YOUR GITHUB USERNAME]"
 git clone https://github.com/${GITHUB_USERNAME}/${APP_NAME}.git
 cd ${APP_NAME}
 ```
@@ -542,6 +551,10 @@ git commit . -m "initial version"
 git push gcp master
 ```
 
+You can see the progress of the pipeline on the console at `Cloud Build --> History`. Since the app we're building here is vulnerabale the pipeline will fail initially. For the purpose of the lab, adapt the threshold for Smart Check to allow 5 critical and 50 high risk vulnerabilities. To do this, edit the `cloudbuild.yaml` within the editor, followed by a git commit and push as before.
+
+The next run should work and the app is deployed on the cluster.
+
 Query the Load Balancer IP by
 
 ```shell
@@ -549,7 +562,7 @@ kubectl get svc -n ${APP_NAME} ${APP_NAME} \
   -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 ```
 
-Done.
+Lab done.
 
 ## Knowledge
 
