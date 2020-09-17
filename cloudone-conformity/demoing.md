@@ -1,22 +1,19 @@
-# CloudOne Conformity
+# Demoing CloudOne Conformity
 
-- [CloudOne Conformity](#cloudone-conformity)
-  - [Demoing](#demoing)
-    - [Prerequisites](#prerequisites)
-    - [About Conformity](#about-conformity)
-    - [Start with the Dashboard](#start-with-the-dashboard)
-    - [Now Begin Digging in](#now-begin-digging-in)
-    - [Rule Configuration](#rule-configuration)
-    - [Profiles](#profiles)
-    - [Reports](#reports)
+- [Demoing CloudOne Conformity](#demoing-cloudone-conformity)
+  - [Prerequisites](#prerequisites)
+  - [About Conformity](#about-conformity)
+  - [Start with the Dashboard](#start-with-the-dashboard)
+  - [Now Begin Digging in](#now-begin-digging-in)
+  - [Rule Configuration](#rule-configuration)
+  - [Profiles](#profiles)
+  - [Reports](#reports)
     - [Communication](#communication)
-    - [Real Time Monitoring](#real-time-monitoring)
+  - [Real Time Monitoring](#real-time-monitoring)
 
 CloudOne Conformity is abbreviated by `CC`
 
-## Demoing
-
-### Prerequisites
+## Prerequisites
 
 - Have a "used" AWS account with
   - EC2 instances
@@ -25,7 +22,7 @@ CloudOne Conformity is abbreviated by `CC`
 
 Important for demoing `CC`, **login to your AWS!**
 
-### About Conformity
+## About Conformity
 
 - Basically, `CC` at it's base is an infrastructure monitoring tool for
   - AWS
@@ -35,7 +32,7 @@ Important for demoing `CC`, **login to your AWS!**
 - `CC` currently has **540+ different rule** and
 - covers **70 different services**
 
-### Start with the Dashboard
+## Start with the Dashboard
 
 - All accounts dashboard provides a **high level overview**
   - **how many checks are done**
@@ -44,7 +41,7 @@ Important for demoing `CC`, **login to your AWS!**
 
 ![alt text](images/01_high_level_overview.png "High Level Overview")
 
-### Now Begin Digging in
+## Now Begin Digging in
 
 ![alt text](images/02_browse_all_checks.png "Browse all Checks")
 
@@ -70,7 +67,7 @@ Important for demoing `CC`, **login to your AWS!**
     - **"how to resolve that issue"**
     - We always provide the instructions to resolve the issue
 
-### Rule Configuration
+## Rule Configuration
 
   - **Dashboard --> Settings --> Configure now**
   ![alt text](images/04_rule_settings.png "Rule Settings")
@@ -88,7 +85,7 @@ Important for demoing `CC`, **login to your AWS!**
       - do exceptions here (S3 bucket name even with regex or tags)
     - Eliminating false positives
 
-### Profiles
+## Profiles
 
   - **Dashboard Menubar --> Profiles**
   - An accounts configuration should be saved as a profile
@@ -99,7 +96,7 @@ Important for demoing `CC`, **login to your AWS!**
     - Create a new Group (dev, test, staging, prod)
     - Creates views
 
-### Reports
+## Reports
 
   - **Dashboard --> Reports...**
   ![alt text](images/08_configured_reports.png "Configured Reports")
@@ -126,7 +123,7 @@ Important for demoing `CC`, **login to your AWS!**
         - configure channel
       - jira closes the ticket when the finding is mitigated
 
-### Real Time Monitoring
+## Real Time Monitoring
 
   - **Dashboard --> Threat monitoring**
   ![alt text](images/10_threat_monitoring.png "Threat Monitoring")
