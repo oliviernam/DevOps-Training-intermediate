@@ -7,6 +7,7 @@
     - [Create a Workspace](#create-a-workspace)
     - [Prepare for our GKE Cluster](#prepare-for-our-gke-cluster)
     - [Create GKE Cluster](#create-gke-cluster)
+  - [JSON Key File](#json-key-file)
   - [Deploy CloudOne Image Security](#deploy-cloudone-image-security)
   - [Configure CloudOne Application Security](#configure-cloudone-application-security)
   - [Prepare the Cloud Build, Publishing and Kubernetes Deployment](#prepare-the-cloud-build-publishing-and-kubernetes-deployment)
@@ -15,18 +16,16 @@
     - [Create Kubernetes Deployment and Service Definition](#create-kubernetes-deployment-and-service-definition)
     - [Create the Build Trigger](#create-the-build-trigger)
     - [Create the Build Specification cloudbuild.yaml](#create-the-build-specification-cloudbuildyaml)
-  - [Trigger the Pipeline](#trigger-the-pipeline)
+    - [Trigger the Pipeline](#trigger-the-pipeline)
   - [Knowledge](#knowledge)
+    - [Links](#links)
+    - [Ingress](#ingress)
+    - [Google-managed SSL certificate](#google-managed-ssl-certificate)
     - [Cloud Builders](#cloud-builders)
     - [Manually trigger the pipeline](#manually-trigger-the-pipeline)
     - [Manually build and push](#manually-build-and-push)
     - [Delete a cluster](#delete-a-cluster)
     - [Troubleshoot Google Cloud Build](#troubleshoot-google-cloud-build)
-  - [Pipelines](#pipelines)
-    - [Var 1](#var-1)
-    - [Var 2](#var-2)
-    - [Var 3](#var-3)
-    - [Var 4](#var-4)
 
 ## TODO
 
@@ -53,6 +52,14 @@ Run the following command in Cloud Shell to confirm that you are authenticated:
 ```shell
 gcloud auth list
 ```
+
+If you are not authenticated run
+
+```shell
+gcloud auth login
+```
+
+and follow the process.
 
 Note: The gcloud command-line tool is the powerful and unified command-line tool in Google Cloud. It comes preinstalled in Cloud Shell. You will notice its support for tab completion. For more information, see gcloud command-line tool overview.
 
@@ -126,10 +133,11 @@ Start your cluster with three nodes.
 gcloud container clusters create ${CLUSTER} \
     --project=${PROJECT} \
     --zone=${ZONE} \
+    --release-channel=rapid \
     --scopes "https://www.googleapis.com/auth/projecthosting,storage-rw"
 ```
 
-Give Cloud Build rights to your cluster.
+Grant Cloud Build rights to your cluster.
 
 ```shell
 export PROJECT_NUMBER="$(gcloud projects describe \
@@ -144,9 +152,35 @@ gcloud projects add-iam-policy-binding ${PROJECT} \
 #     --role=roles/owner
 ```
 
+## JSON Key File
+
+A service account key is a long-lived key-pair that you can use as a credential for a service account. You are responsible for security of the private key and other key management operations, such as key rotation.
+
+Anyone who has access to a valid private key for a service account will be able to access resources through the service account. For example, some service accounts automatically created by Google Cloud, such as the Container Registry service account, are granted the read-write Editor role for the parent project. The Compute Engine default service account is configured with read-only access to storage within the same project.
+
+In addition, the lifecycle of the key's access to the service account (and thus, the data the service account has access to) is independent of the lifecycle of the user who has downloaded the key.
+
+```shell
+export GCR_SERVICE_ACCOUNT=service-gcrsvc
+
+gcloud iam service-accounts create ${GCR_SERVICE_ACCOUNT}
+
+gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:gcrsvc@${PROJECT}.iam.gserviceaccount.com" --role "roles/storage.admin"
+
+gcloud iam service-accounts keys create ${GCR_SERVICE_ACCOUNT}_keyfile.json --iam-account gcrsvc@${PROJECT}.iam.gserviceaccount.com
+```
+
 Your environment is ready!
 
 ## Deploy CloudOne Image Security
+
+First, a note on certificates.
+
+Google is very strict when it comes to certificates. You'll likely realized that when using the Chrome browser already. For the same reason, we cannot use self signed certificates for services when Google services like CloudBuild should be able to connect to them. That effectively means, we need to use certificates with are trusted by other services and browsers.
+
+In short, we're going to deploy Smart Check with a NodePort service (not LoadBalancer). Next we do create a Google managed certificate and an ingress which we bind together for the console of Smart Check.
+
+We cannot use the built in registry of Smart Check, because at the time of writing, a CRD of kind BackendConfig does not support an SSL health check configuration for the Google load balancer (see: <https://cloud.google.com/kubernetes-engine/docs/how-to/ingress-features#direct_health>). We will use a dedicated GCR for this.
 
 Define some variables
 
@@ -164,20 +198,138 @@ Set the activation code for Smart Check
 export DSSC_AC=<activation code>
 ```
 
-Finally, run
+1. Create a static address
+2. Deploy Smart Check as NodePort Service
+3. Create managed certificate
+4. Create ingress
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | bash
-export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-export DSSC_HOST="https://smartcheck-${DSSC_HOST_IP//./-}.nip.io"
+gcloud compute addresses create smartcheck-address --global
+```
+
+Describe the address and set DSSC_HOST
+
+```shell
+export DSSC_HOST=$(gcloud compute addresses describe smartcheck-address --global | sed -n 's/address: \(.*\)/\1/p')
+```
+
+To deploy Smart Check as a NodePort service, run
+
+```shell
+curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-np.sh | bash
 ```
 
 or
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-ip.sh | bash
-export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-export DSSC_HOST="https://smartcheck-${DSSC_HOST_IP//./-}.nip.io"
+curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-np.sh | bash
+```
+
+But beware, Smart Check will not be accessible via the internet as of now, since we deployed it as a NodePort service only.
+
+Now, let's request a publicly trusted certificate for Smart Check.
+
+```shell
+cat <<EOF > smartcheck-managed-certificate.yml
+apiVersion: networking.gke.io/v1beta2
+kind: ManagedCertificate
+metadata:
+  name: smartcheck-certificate
+spec:
+  domains:
+    - smartcheck-${DSSC_HOST//./-}.nip.io
+EOF
+
+kubectl -n ${DSSC_NAMESPACE} apply -f smartcheck-managed-certificate.yml
+```
+
+Next, we're defining the backend config for the health checks and
+
+```shell
+kubectl -n smartcheck annotate service proxy cloud.google.com/app-protocols='{"https":"HTTPS","http":"HTTP"}'
+```
+
+Now assign the certificate to the ingress we're creating below:
+
+```shell
+cat <<EOF > smartcheck-managed-ingress.yml
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: proxy-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: smartcheck-address
+    networking.gke.io/managed-certificates: smartcheck-certificate
+    # ingress.kubernetes.io/backend-protocol: HTTPS
+    # ingress.kubernetes.io/secure-backends: "true"
+  labels:
+    service: proxy
+spec:
+  backend:
+    serviceName: proxy
+    servicePort: 443
+EOF
+
+kubectl -n ${DSSC_NAMESPACE} apply -f smartcheck-managed-ingress.yml
+```
+
+It will take a couple of minutes (15 to 20) to get the certificates and the load balancer in configured active state. You can verify the status with
+
+```shell
+watch kubectl -n ${DSSC_NAMESPACE} describe managedcertificates
+```
+
+```text
+Name:         smartcheck-certificate
+Namespace:    smartcheck
+Labels:       <none>
+Annotations:  <none>
+API Version:  networking.gke.io/v1beta2
+Kind:         ManagedCertificate
+Metadata:
+  Creation Timestamp:  2020-09-10T10:40:51Z
+  Generation:          2
+  Resource Version:    295671
+  Self Link:           /apis/networking.gke.io/v1beta2/namespaces/smartcheck/managedcertificates/smartcheck-certificate
+  UID:                 a02673d9-27b9-4c8d-b7e6-7c2c597c979b
+Spec:
+  Domains:
+    smartcheck-34-120-180-43.nip.io
+Status:
+  Certificate Name:    mcrt-dbc47353-86ef-423a-9aa1-d064ecba4318
+  Certificate Status:  Provisioning
+  Domain Status:
+    Domain:  smartcheck-34-120-180-43.nip.io
+    Status:  Provisioning
+Events:
+  Type    Reason  Age   From                            Message
+  ----    ------  ----  ----                            -------
+  Normal  Create  40s   managed-certificate-controller  Create SslCertificate mcrt-dbc47353-86ef-423a-9aa1-d064ecba4318
+```
+
+The certificate status should change to `Active` after some time.
+
+Next, we add the Google Container Registry to Smart Check.
+
+```shell
+#!/bin/bash
+
+# Get bearertoken
+DSSC_BEARERTOKEN=$(curl -s -k -X POST https://${DSSC_HOST}/api/sessions -H "Content-Type: application/json"  -H "Api-Version: 2018-05-01" -H "cache-control: no-cache" -d "{\"user\":{\"userid\":\"${DSSC_USERNAME}\",\"password\":\"${DSSC_PASSWORD}\"}}" | jq '.token' | tr -d '"')
+
+# Read service keyfile
+DSSC_REG_GCR_JSON=$(cat service-gcrsvc_keyfile.json | jq tostring)
+
+# Set filter
+DSSC_FILTER='*'
+
+# Add registry
+curl -v -s -k -X POST https://$DSSC_HOST/api/registries?scan=true \
+  -H "Content-Type: application/json" \
+  -H "Api-Version: 2018-05-01" \
+  -H "Authorization: Bearer $DSSC_BEARERTOKEN" \
+  -H 'cache-control: no-cache' \
+  -d "{\"name\":\"GCR\",\"host\":\"gcr.io\",\"credentials\":{\"username\":\"_json_key\",\"password\":$DSSC_REG_GCR_JSON},\"filter\":{\"include\":[\"$DSSC_FILTER\"]}}"
 ```
 
 ## Configure CloudOne Application Security
@@ -202,7 +354,8 @@ And now clone it from your git:
 
 ```shell
 export APP_NAME=c1-app-sec-uploader
-git clone https://github.com/mawinkler/${APP_NAME}.git
+export GITHUB_USERNAME=mawinkler
+git clone https://github.com/${GITHUB_USERNAME}/${APP_NAME}.git
 cd ${APP_NAME}
 ```
 
@@ -254,9 +407,9 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - port: 5000
+  - port: 80
     name: ${IMAGE_NAME}
-    targetPort: 5000
+    targetPort: 80
   selector:
     app: ${IMAGE_NAME}
 ---
@@ -291,7 +444,7 @@ spec:
           value: _TREND_AP_SECRET
         imagePullPolicy: Always
         ports:
-        - containerPort: 5000
+        - containerPort: 80
 EOF
 ```
 
@@ -300,6 +453,34 @@ EOF
 Here, we set up a build trigger to watch for changes in the source code version control system.
 
 ```shell
+# export DSSC_REG_HOST=gcr.io
+# export DSSC_REGUSER=_json_key
+# export DSSC_REGPASSWORD=$(cat ${GCR_SERVICE_ACCOUNT}_keyfile.json | jq tostring)
+
+# cat <<EOF > build-trigger.json
+# {
+#   "triggerTemplate": {
+#     "projectId": "${PROJECT}",
+#     "repoName": "${IMAGE_NAME}",
+#     "branchName": "master"
+#   },
+#   "description": "master",
+#   "substitutions": {
+#     "_CLOUDSDK_COMPUTE_ZONE": "${ZONE}",
+#     "_CLOUDSDK_CONTAINER_CLUSTER": "${CLUSTER}",
+#     "_CLOUDONE_IMAGESECURITY_HOST": "smartcheck-${DSSC_HOST//./-}.nip.io",
+#     "_CLOUDONE_IMAGESECURITY_USER": "${DSSC_USERNAME}",
+#     "_CLOUDONE_IMAGESECURITY_PASSWORD": "${DSSC_PASSWORD}",
+#     "_CLOUDONE_PRESCAN_HOST": "${DSSC_REG_HOST}",
+#     "_CLOUDONE_PRESCAN_USER": "${DSSC_REGUSER}",
+#     "_CLOUDONE_PRESCAN_PASSWORD": '${DSSC_REGPASSWORD}',
+#     "_CLOUDONE_TREND_AP_KEY": "${TREND_AP_KEY}",
+#     "_CLOUDONE_TREND_AP_SECRET": "${TREND_AP_SECRET}"
+#   },
+#   "filename": "cloudbuild.yaml"
+# }
+# EOF
+
 cat <<EOF > build-trigger.json
 {
   "triggerTemplate": {
@@ -314,9 +495,7 @@ cat <<EOF > build-trigger.json
     "_CLOUDONE_IMAGESECURITY_HOST": "smartcheck-${DSSC_HOST//./-}.nip.io",
     "_CLOUDONE_IMAGESECURITY_USER": "${DSSC_USERNAME}",
     "_CLOUDONE_IMAGESECURITY_PASSWORD": "${DSSC_PASSWORD}",
-    "_CLOUDONE_PRESCAN_USER": "${DSSC_REGUSER}",
-    "_CLOUDONE_PRESCAN_PASSWORD": "${DSSC_REGPASSWORD}"
-    "_CLOUDONE_TREND_AP_KEY": "${TREND_AP_KEY}"
+    "_CLOUDONE_TREND_AP_KEY": "${TREND_AP_KEY}",
     "_CLOUDONE_TREND_AP_SECRET": "${TREND_AP_SECRET}"
   },
   "filename": "cloudbuild.yaml"
@@ -355,7 +534,7 @@ EOF
 " 2> /dev/null > cloudbuild.yaml
 ```
 
-## Trigger the Pipeline
+### Trigger the Pipeline
 
 ```shell
 git add .
@@ -366,10 +545,39 @@ git push gcp master
 Query the Load Balancer IP by
 
 ```shell
-kubectl -n ${APP_NAME} get services
+kubectl get svc -n ${APP_NAME} ${APP_NAME} \
+  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 ```
 
+Done.
+
 ## Knowledge
+
+### Links
+
+- <https://cloud.google.com/kubernetes-engine/docs/concepts/ingress>
+- <https://cloud.google.com/kubernetes-engine/docs/how-to/load-balance-ingress>
+- <https://cloud.google.com/kubernetes-engine/docs/concepts/ingress-xlb#setting_up_https_tls_between_client_and_load_balancer>
+- <https://cloud.google.com/kubernetes-engine/docs/concepts/ingress-xlb#disabling_http>
+- <https://cloud.google.com/kubernetes-engine/docs/concepts/ingress-xlb#https_tls_between_load_balancer_and_your_application>
+- <https://cloud.google.com/kubernetes-engine/docs/tutorials/http-balancer>
+- <https://cloud.google.com/kubernetes-engine/docs/concepts/ingress?authuser=1&hl=nl#health_checks>
+- <https://cloud.google.com/kubernetes-engine/docs/concepts/ingress#def_inf_hc>
+- <https://cloud.google.com/kubernetes-engine/docs/how-to/ingress-features#direct_health>
+
+### Ingress
+
+As per the official definition, Ingress is an *API object that manages external access to the services in a cluster, typically HTTP. Ingress can provide load balancing, SSL termination, and name-based virtual hosting*
+
+One of the main use cases of ingress is, it allows users to access Kubernetes services from outside the Kubernetes cluster.
+
+Ingress has 2 parts, ingress controller (there are many controllers) and ingress rules. We create ingress rules and we need a controller that satisfies and process those rules. Only applying ingress rules does not affect the cluster.
+
+### Google-managed SSL certificate
+
+Managed Certificate is a Custom Resource object created by google. This CRD allows users to automatically acquire an SSL certificate from a Certificate Authority, configure certificate on the load balancer and auto-renew it on time when it’s expired.
+
+The process is super simple and users only need to provide a domain for which they want to obtain a certificate.
 
 ### Cloud Builders
 
@@ -426,244 +634,4 @@ or
 cloud-build-local --config=cloudbuild.yaml \
   --dryrun=false \
   --push .
-```
-
-## Pipelines
-
-### Var 1
-
-```yaml
-steps:
-
-### Build
-
-  - id: 'build'
-    name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/devtest-285306/c1-app-sec-uploader:latest', '.']
-
-### Scan
-
-  - id: 'scan'
-    name: 'gcr.io/cloud-builders/docker'
-    env:
-      - 'CLOUDONE_IMAGESECURITY_HOST=${_CLOUDONE_IMAGESECURITY_HOST}'
-      - 'CLOUDONE_IMAGESECURITY_USER=${_CLOUDONE_IMAGESECURITY_USER}'
-      - 'CLOUDONE_IMAGESECURITY_PASSWORD=${_CLOUDONE_IMAGESECURITY_PASSWORD}'
-      - 'CLOUDONE_PRESCAN_USER=${_CLOUDONE_PRESCAN_USER}'
-      - 'CLOUDONE_PRESCAN_PASSWORD=${_CLOUDONE_PRESCAN_PASSWORD}'
-      - 'DOCKER_TLS_CERTDIR=/usr/local/share/ca-certificates'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-          openssl s_client -showcerts -connect $${CLOUDONE_IMAGESECURITY_HOST}:443 < /dev/null | \
-            sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/$${CLOUDONE_IMAGESECURITY_HOST}.crt
-          update-ca-certificates
-
-          echo $${CLOUDONE_PRESCAN_PASSWORD} | docker login $${CLOUDONE_IMAGESECURITY_HOST}:5000 --username $${CLOUDONE_PRESCAN_USER} --password-stdin
-          cat /proc/self/mounts
-
-          docker run  -v /var/run/docker.sock:/var/run/docker.sock \
-            -v /home/marwin_mu/.cache:/root/.cache/ deepsecurity/smartcheck-scan-action \
-            --preregistry-scan \
-            --preregistry-password=$${CLOUDONE_PRESCAN_PASSWORD} \
-            --preregistry-user=$${CLOUDONE_PRESCAN_USER} \
-            --image-name=gcr.io/devtest-285306/c1-app-sec-uploader:latest \
-            --smartcheck-host=$${CLOUDONE_IMAGESECURITY_HOST} \
-            --smartcheck-user=$${CLOUDONE_IMAGESECURITY_USER} \
-            --smartcheck-password=$${CLOUDONE_IMAGESECURITY_PASSWORD} \
-            --insecure-skip-tls-verify \
-            --insecure-skip-registry-tls-verify \
-            --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
-
-### Publish
-  - id: 'publish'
-    name: 'gcr.io/cloud-builders/docker'
-    #entrypoint: 'bash'
-    args: ['push', 'gcr.io/devtest-285306/c1-app-sec-uploader:latest']
-    #args:
-    #  - '-c'
-    #  - |
-    #      docker push gcr.io/devtest-285306/c1-app-sec-uploader:latest
-
-### Deploy
-  - id: 'deploy'
-    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    env:
-      - 'CLOUDSDK_COMPUTE_ZONE=${_CLOUDSDK_COMPUTE_ZONE}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLOUDSDK_CONTAINER_CLUSTER}'
-      - 'KUBECONFIG=/kube/config'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-          CLUSTER=$(gcloud config get-value container/cluster)
-          PROJECT=$(gcloud config get-value core/project)
-          ZONE=$(gcloud config get-value compute/zone)
-
-          gcloud container clusters get-credentials "$${CLUSTER}"             --project "$${PROJECT}"             --zone "$${ZONE}"  
-
-          sed -i 's|gcr.io/PROJECT/IMAGE_NAME:IMAGE_TAG|gcr.io/devtest-285306/c1-app-sec-uploader:latest|' ./app-gcp.yml
-
-          kubectl get ns c1-app-sec-uploader || kubectl create ns c1-app-sec-uploader
-          kubectl apply --namespace c1-app-sec-uploader -f app-gcp.yml
-```
-
-### Var 2
-
-```yaml
-  - id: 'scan'
-    # name: 'gcr.io/cloud-builders/docker'
-    name: 'deepsecurity/smartcheck-scan-action'
-    env:
-      - 'CLOUDONE_IMAGESECURITY_HOST=${_CLOUDONE_IMAGESECURITY_HOST}'
-      - 'CLOUDONE_IMAGESECURITY_USER=${_CLOUDONE_IMAGESECURITY_USER}'
-      - 'CLOUDONE_IMAGESECURITY_PASSWORD=${_CLOUDONE_IMAGESECURITY_PASSWORD}'
-      - 'CLOUDONE_PRESCAN_USER=${_CLOUDONE_PRESCAN_USER}'
-      - 'CLOUDONE_PRESCAN_PASSWORD=${_CLOUDONE_PRESCAN_PASSWORD}'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-          openssl s_client -showcerts -connect $${CLOUDONE_IMAGESECURITY_HOST}:443 < /dev/null | \
-            sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/$${CLOUDONE_IMAGESECURITY_HOST}.crt
-          update-ca-certificates
-
-          node /app/dist/index.js --preregistry-scan \
-            --preregistry-password=$${CLOUDONE_PRESCAN_PASSWORD} \
-            --preregistry-user=$${CLOUDONE_PRESCAN_USER} \
-            --image-name=gcr.io/devtest-285306/c1-app-sec-uploader:latest \
-            --smartcheck-host=$${CLOUDONE_IMAGESECURITY_HOST} \
-            --smartcheck-user=$${CLOUDONE_IMAGESECURITY_USER} \
-            --smartcheck-password=$${CLOUDONE_IMAGESECURITY_PASSWORD} \
-            --insecure-skip-tls-verify \
-            --insecure-skip-registry-tls-verify \
-            --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
-```
-
-### Var 3
-
-```yaml
-  - id: 'scan'
-    # name: 'gcr.io/cloud-builders/docker'
-    name: 'deepsecurity/smartcheck-scan-action'
-    env:
-      - 'CLOUDONE_IMAGESECURITY_HOST=${_CLOUDONE_IMAGESECURITY_HOST}'
-      - 'CLOUDONE_IMAGESECURITY_USER=${_CLOUDONE_IMAGESECURITY_USER}'
-      - 'CLOUDONE_IMAGESECURITY_PASSWORD=${_CLOUDONE_IMAGESECURITY_PASSWORD}'
-      - 'CLOUDONE_PRESCAN_USER=${_CLOUDONE_PRESCAN_USER}'
-      - 'CLOUDONE_PRESCAN_PASSWORD=${_CLOUDONE_PRESCAN_PASSWORD}'
-      - 'SSL_CERT_FILE=/usr/local/share/ca-certificates/${_CLOUDONE_IMAGESECURITY_HOST}.crt'
-      - 'NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/${_CLOUDONE_IMAGESECURITY_HOST}.crt'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-          apk update
-          apk add ca-certificates openssl
-
-          mkdir -p /usr/local/share/ca-certificates
-          openssl s_client -showcerts -connect $${CLOUDONE_IMAGESECURITY_HOST}:443 < /dev/null | \
-            sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/$${CLOUDONE_IMAGESECURITY_HOST}.crt
-          update-ca-certificates
-
-          npm config set cafile /usr/local/share/ca-certificates/$${CLOUDONE_IMAGESECURITY_HOST}.crt
-
-          echo $${NODE_EXTRA_CA_CERTS}
-
-          node /app/dist/index.js \
-            --use-openssl-ca \
-            --preregistry-scan \
-            --preregistry-password=$${CLOUDONE_PRESCAN_PASSWORD} \
-            --preregistry-user=$${CLOUDONE_PRESCAN_USER} \
-            --image-name=gcr.io/devtest-285306/c1-app-sec-uploader:latest \
-            --smartcheck-host=$${CLOUDONE_IMAGESECURITY_HOST} \
-            --smartcheck-user=$${CLOUDONE_IMAGESECURITY_USER} \
-            --smartcheck-password=$${CLOUDONE_IMAGESECURITY_PASSWORD} \
-            --insecure-skip-tls-verify \
-            --insecure-skip-registry-tls-verify \
-            --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
-```
-
-### Var 4
-
-```yaml
-steps:
-
-### Build
-
-  - id: 'build'
-    name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/devtest-285306/c1-app-sec-uploader:latest', '.']
-
-### Scan
-
-  - id: 'scan'
-    name: 'gcr.io/cloud-builders/docker'
-    env:
-      - 'CLOUDONE_IMAGESECURITY_HOST=${_CLOUDONE_IMAGESECURITY_HOST}'
-      - 'CLOUDONE_IMAGESECURITY_USER=${_CLOUDONE_IMAGESECURITY_USER}'
-      - 'CLOUDONE_IMAGESECURITY_PASSWORD=${_CLOUDONE_IMAGESECURITY_PASSWORD}'
-      - 'CLOUDONE_PRESCAN_USER=${_CLOUDONE_PRESCAN_USER}'
-      - 'CLOUDONE_PRESCAN_PASSWORD=${_CLOUDONE_PRESCAN_PASSWORD}'
-      - 'DOCKER_TLS_CERTDIR=/usr/local/share/ca-certificates'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-          openssl s_client -showcerts -connect $${CLOUDONE_IMAGESECURITY_HOST}:5000 < /dev/null | \
-            sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /usr/local/share/ca-certificates/$${CLOUDONE_IMAGESECURITY_HOST}.crt
-
-          mkdir -p /etc/docker/certs.d/$${CLOUDONE_IMAGESECURITY_HOST}:5000
-          cp /usr/local/share/ca-certificates/$${CLOUDONE_IMAGESECURITY_HOST}.crt /etc/docker/certs.d/$${CLOUDONE_IMAGESECURITY_HOST}:5000/ca.crt
-
-          update-ca-certificates
-          /etc/init.d/docker restart
-
-          echo $${CLOUDONE_PRESCAN_PASSWORD} | docker login $${CLOUDONE_IMAGESECURITY_HOST}:5000 --username $${CLOUDONE_PRESCAN_USER} --password-stdin
-
-          docker run  -v /var/run/docker.sock:/var/run/docker.sock \
-            -v /home/marwin_mu/.cache:/root/.cache/ deepsecurity/smartcheck-scan-action \
-            --preregistry-scan \
-            --preregistry-password=$${CLOUDONE_PRESCAN_PASSWORD} \
-            --preregistry-user=$${CLOUDONE_PRESCAN_USER} \
-            --image-name=gcr.io/devtest-285306/c1-app-sec-uploader:latest \
-            --smartcheck-host=$${CLOUDONE_IMAGESECURITY_HOST} \
-            --smartcheck-user=$${CLOUDONE_IMAGESECURITY_USER} \
-            --smartcheck-password=$${CLOUDONE_IMAGESECURITY_PASSWORD} \
-            --insecure-skip-tls-verify \
-            --insecure-skip-registry-tls-verify \
-            --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
-
-### Publish
-  - id: 'publish'
-    name: 'gcr.io/cloud-builders/docker'
-    #entrypoint: 'bash'
-    args: ['push', 'gcr.io/devtest-285306/c1-app-sec-uploader:latest']
-    #args:
-    #  - '-c'
-    #  - |
-    #      docker push gcr.io/devtest-285306/c1-app-sec-uploader:latest
-
-### Deploy
-  - id: 'deploy'
-    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    env:
-      - 'CLOUDSDK_COMPUTE_ZONE=${_CLOUDSDK_COMPUTE_ZONE}'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLOUDSDK_CONTAINER_CLUSTER}'
-      - 'KUBECONFIG=/kube/config'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-          CLUSTER=$(gcloud config get-value container/cluster)
-          PROJECT=$(gcloud config get-value core/project)
-          ZONE=$(gcloud config get-value compute/zone)
-
-          gcloud container clusters get-credentials "$${CLUSTER}"             --project "$${PROJECT}"             --zone "$${ZONE}"  
-
-          sed -i 's|gcr.io/PROJECT/IMAGE_NAME:IMAGE_TAG|gcr.io/devtest-285306/c1-app-sec-uploader:latest|' ./app-gcp.yml
-
-          kubectl get ns c1-app-sec-uploader || kubectl create ns c1-app-sec-uploader
-          kubectl apply --namespace c1-app-sec-uploader -f app-gcp.yml
 ```

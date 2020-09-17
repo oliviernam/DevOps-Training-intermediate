@@ -10,41 +10,6 @@ steps:
       - |
           docker build -t gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} .
 
-### Scan
-
-  - id: 'scan'
-    name: 'gcr.io/cloud-builders/docker'
-    env:
-      - 'CLOUDONE_IMAGESECURITY_HOST=\${_CLOUDONE_IMAGESECURITY_HOST}'
-      - 'CLOUDONE_IMAGESECURITY_USER=\${_CLOUDONE_IMAGESECURITY_USER}'
-      - 'CLOUDONE_IMAGESECURITY_PASSWORD=\${_CLOUDONE_IMAGESECURITY_PASSWORD}'
-      - 'CLOUDONE_PRESCAN_USER=\${_CLOUDONE_PRESCAN_USER}'
-      - 'CLOUDONE_PRESCAN_PASSWORD=\${_CLOUDONE_PRESCAN_PASSWORD}'
-      - 'CLOUDONE_TREND_AP_KEY=\${_CLOUDONE_TREND_AP_KEY}'
-      - 'CLOUDONE_TREND_AP_SECRET=\${_CLOUDONE_TREND_AP_SECRET}'
-
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-          openssl s_client -showcerts -connect \$\${CLOUDONE_IMAGESECURITY_HOST}:443 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > smcert.crt
-          sudo cp smcert.crt /usr/local/share/ca-certificates/\$\${CLOUDONE_IMAGESECURITY_HOST}.crt
-          sudo mkdir -p /etc/docker/certs.d/\$\${CLOUDONE_IMAGESECURITY_HOST}:5000
-          sudo cp smcert.crt /etc/docker/certs.d/\$\${CLOUDONE_IMAGESECURITY_HOST}:5000/ca.crt
-          sudo update-ca-certificates
-
-          docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.cache:/root/.cache/ deepsecurity/smartcheck-scan-action \
-          --preregistry-scan \
-          --preregistry-password=\$\${CLOUDONE_PRESCAN_PASSWORD} \
-          --preregistry-user=\$\${CLOUDONE_PRESCAN_USER} \
-          --image-name=gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} \
-          --smartcheck-host=\$\${CLOUDONE_IMAGESECURITY_HOST} \
-          --smartcheck-user=\$\${CLOUDONE_IMAGESECURITY_USER} \
-          --smartcheck-password=\$\${CLOUDONE_IMAGESECURITY_PASSWORD} \
-          --insecure-skip-tls-verify \
-          --insecure-skip-registry-tls-verify \
-          --findings-threshold='{"malware": 0, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
-
 ### Publish
   - id: 'publish'
     name: 'gcr.io/cloud-builders/docker'
@@ -54,6 +19,40 @@ steps:
       - |
           docker push gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
 
+### Scan
+
+  - id: 'scan'
+    name: 'gcr.io/cloud-builders/docker'
+    env:
+      - 'CLOUDONE_IMAGESECURITY_HOST=\${_CLOUDONE_IMAGESECURITY_HOST}'
+      - 'CLOUDONE_IMAGESECURITY_USER=\${_CLOUDONE_IMAGESECURITY_USER}'
+      - 'CLOUDONE_IMAGESECURITY_PASSWORD=\${_CLOUDONE_IMAGESECURITY_PASSWORD}'
+      # - 'CLOUDONE_PRESCAN_HOST=\${_CLOUDONE_PRESCAN_HOST}'
+      # - 'CLOUDONE_PRESCAN_USER=\${_CLOUDONE_PRESCAN_USER}'
+      # - 'CLOUDONE_PRESCAN_PASSWORD=\${_CLOUDONE_PRESCAN_PASSWORD}'
+
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+          docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.cache:/root/.cache/ deepsecurity/smartcheck-scan-action \
+            --image-name=gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} \
+            --smartcheck-host=\$\${CLOUDONE_IMAGESECURITY_HOST} \
+            --smartcheck-user=\$\${CLOUDONE_IMAGESECURITY_USER} \
+            --smartcheck-password=\$\${CLOUDONE_IMAGESECURITY_PASSWORD} \
+            --findings-threshold='{"malware": 0, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 0 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
+
+          # docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.cache:/root/.cache/ deepsecurity/smartcheck-scan-action \
+          #   --preregistry-scan \
+          #   --preregistry-host=\$\${CLOUDONE_PRESCAN_HOST} \
+          #   --preregistry-user=\$\${CLOUDONE_PRESCAN_USER} \
+          #   --preregistry-password=\$\${CLOUDONE_PRESCAN_PASSWORD} \
+          #   --image-name=gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} \
+          #   --smartcheck-host=\$\${CLOUDONE_IMAGESECURITY_HOST} \
+          #   --smartcheck-user=\$\${CLOUDONE_IMAGESECURITY_USER} \
+          #   --smartcheck-password=\$\${CLOUDONE_IMAGESECURITY_PASSWORD} \
+          #   --findings-threshold='{"malware": 0, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
+
 ### Deploy
   - id: 'deploy'
     name: 'gcr.io/cloud-builders/gcloud'
@@ -61,6 +60,8 @@ steps:
       - 'CLOUDSDK_COMPUTE_ZONE=\${_CLOUDSDK_COMPUTE_ZONE}'
       - 'CLOUDSDK_CONTAINER_CLUSTER=\${_CLOUDSDK_CONTAINER_CLUSTER}'
       - 'KUBECONFIG=/kube/config'
+      - 'CLOUDONE_TREND_AP_KEY=\${_CLOUDONE_TREND_AP_KEY}'
+      - 'CLOUDONE_TREND_AP_SECRET=\${_CLOUDONE_TREND_AP_SECRET}'
     entrypoint: 'bash'
     args:
       - '-c'
