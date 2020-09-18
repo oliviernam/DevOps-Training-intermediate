@@ -1,12 +1,11 @@
 # Demoing CloudOne File Storage Security
 
 - [Demoing CloudOne File Storage Security](#demoing-cloudone-file-storage-security)
-  - [TODO](#todo)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
-  - [Demoing](#demoing)
-    - [Tags](#tags)
-    - [Promote or Quarantine](#promote-or-quarantine)
+  - [Demoing with Tags](#demoing-with-tags)
+  - [Improving the Functionality](#improving-the-functionality)
+  - [Demoing Promote or Quarantine](#demoing-promote-or-quarantine)
   - [Deinstallation](#deinstallation)
 
 CloudOne File Storage Security is abbreviated by `FSS`
@@ -35,20 +34,18 @@ Afterwards you should have a Scanner Stack and one Storage Stack shown in the Cl
 - `filestoragesecurity-all-in-one-copyzipsdestbucket-??????`
 - `filestoragesecurity-all-in-one-copyzipsdestbucket-??????`
 
-## Demoing
+## Demoing with Tags
 
-Open a shell session either on Cloud9 or any other instance with a configured aws cli.
-
-### Tags
+Open a shell session either on Cloud9 or any other instance with a configured `aws cli`.
 
 The basic functionality of FSS is to scan on file upload to the `filestoragesecurity-scanning-bucket` and add tags to file if it got scanned and if it's malicous or not.
 
-Download the `eicar.com` and upload it to the scanning bucket.
+Download the `eicarcom2.zip` and upload it to the scanning bucket.
 
 ```shell
 export SCANNING_BUCKET=$(aws s3 ls | sed -n 's/.*\(filestoragesecurity-scanning-bucket.*\)/\1/p')
-wget https://secure.eicar.org/eicarcom2.zip
 
+wget https://secure.eicar.org/eicarcom2.zip
 aws s3 cp eicarcom2.zip s3://${SCANNING_BUCKET}/eicarcom2.zip
 ```
 
@@ -77,9 +74,9 @@ aws s3api get-object-tagging --bucket ${SCANNING_BUCKET} --key eicarcom2.zip
 }
 ```
 
-### Promote or Quarantine
+## Improving the Functionality
 
-After a scan occurs, we're able to place clean files on one bucket and malicious in another.
+FSS does only tag scanned files. This effectively means, that the logic if the uploaded files should be processed by some logic needs to be on the application side. With the help of a Lambda and a littne SNS we're able to take that part. So, after a scan occurs, we're able to place clean files on one bucket and malicious in another.
 
 Still being in your aws cli session create two S3 buckets.
 
@@ -191,8 +188,28 @@ Subscribe the Lambda to the SNS topic
 aws sns subscribe --topic-arn ${SCAN_RESULT_TOPIC_ARN} --protocol lambda --notification-endpoint ${LAMBDA_ARN} --region us-east-1
 ```
 
+## Demoing Promote or Quarantine
+
+Download the `eicar.com` and upload it to the scanning bucket.
+
+```shell
+export SCANNING_BUCKET=$(aws s3 ls | sed -n 's/.*\(filestoragesecurity-scanning-bucket.*\)/\1/p')
+
+wget https://secure.eicar.org/eicar.com
+aws s3 cp eicar.com s3://${SCANNING_BUCKET}/eicar.com
+```
+
+Download a second, clean file and upload it.
+
+```shell
+wget https://www.google.de/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png
+aws s3 cp googlelogo_color_272x92dp.png s3://${SCANNING_BUCKET}/googlelogo_color_272x92dp.png
+```
+
+If everything works, you should be able to find the eicar file in the quarantine bucket, the image file in the promote bucket.
+
 ## Deinstallation
 
-Got to CloudFormation on AWS and delete the FileStorageSecurity-All-In-One-Stack. Afterwards the eventually remaining Storage Stacks.
+Got to CloudFormation on AWS and delete the FileStorageSecurity-All-In-One-Stack. Afterwards eventually remaining Storage Stacks.
 
-At the time of writing, there is no possibility to delete orphaned stacks on the console of Cloud One.
+**At the time of writing, there is no possibility to delete orphaned stacks on the console of Cloud One.**
