@@ -11,11 +11,6 @@
 
 CloudOne File Storage Security is abbreviated by `FSS`
 
-## TODO
-
-- Create an execution role for the Lambda function
-- Subscribe the Lambda to the SNS topic
-
 ## Prerequisites
 
 - Have an AWS account
@@ -42,7 +37,7 @@ Afterwards you should have a Scanner Stack and one Storage Stack shown in the Cl
 
 ## Demoing
 
-Open a shell session either on Cloud9 or any other instance with a configures aws cli.
+Open a shell session either on Cloud9 or any other instance with a configured aws cli.
 
 ### Tags
 
@@ -52,8 +47,6 @@ Download the `eicar.com` and upload it to the scanning bucket.
 
 ```shell
 export SCANNING_BUCKET=$(aws s3 ls | sed -n 's/.*\(filestoragesecurity-scanning-bucket.*\)/\1/p')
-# wget https://secure.eicar.org/eicar.com
-# wget https://secure.eicar.org/eicar_com.zip
 wget https://secure.eicar.org/eicarcom2.zip
 
 aws s3 cp eicarcom2.zip s3://${SCANNING_BUCKET}/eicarcom2.zip
@@ -131,17 +124,28 @@ cat <<EOF > fss-trust-policy.json
 }
 EOF
 
-aws iam create-policy --policy-name "PolicyName": " --policy-document file://fss-trust-policy.json
+aws iam create-policy --policy-name FSS_Lambda_Policy --policy-document file://fss-trust-policy.json
 ```
-
-**TODO**
 
 Create an execution role for the Lambda function
 
 ```shell
+LAMBDA_TRUST="{
+    \"Version\": \"2012-10-17\", 
+    \"Statement\": [
+        {
+            \"Action\": \"sts:AssumeRole\", 
+            \"Effect\": \"Allow\", 
+            \"Principal\": {
+                \"Service\": \"lambda.amazonaws.com\"
+            }
+        }
+    ]
+}" 
+
 export POLICY_ARN=$(aws iam list-policies --scope Local | jq -r '.Policies[] | select(.Arn | contains("FSS")) | .Arn')
 
-aws iam create-role --role-name FSS_Lambda_Role
+aws iam create-role --role-name FSS_Lambda_Role --assume-role-policy-document "${LAMBDA_TRUST}"
 aws iam attach-role-policy --role-name FSS_Lambda_Role --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 aws iam attach-role-policy --role-name FSS_Lambda_Role --policy-arn ${POLICY_ARN}
 
@@ -171,7 +175,8 @@ Subscribe the Lambda to the SNS topic
 Query the ScanResultTopic ARN
 
 ```shell
-export SCAN_RESULT_TOPIC_ARN=$(aws cloudformation list-stack-resources --region us-east-1 --stack-name FileStorageSecurity-All-In-One-Stack-StorageStack-17GKRTOW9LTC5 | jq -r '.StackResourceSummaries[] | select(.LogicalResourceId=="ScanResultTopic") | .PhysicalResourceId')
+export STORAGE_STACK=$(aws cloudformation list-stacks --region us-east-1 | jq -r '.StackSummaries[] | select(.StackId | contains("FileStorageSecurity-All-In-One-Stack-StorageStack")) | select(.StackStatus=="CREATE_COMPLETE") | .StackName')
+export SCAN_RESULT_TOPIC_ARN=$(aws cloudformation list-stack-resources --region us-east-1 --stack-name ${STORAGE_STACK} | jq -r '.StackResourceSummaries[] | select(.LogicalResourceId=="ScanResultTopic") | .PhysicalResourceId')
 ```
 
 Query the Lambda ARN
@@ -180,12 +185,10 @@ Query the Lambda ARN
 export LAMBDA_ARN=$(aws lambda list-functions --region us-east-1 | jq -r '.Functions[] | select(.FunctionName | contains("FSS_Prom_Quar_Lambda")) | .FunctionArn')
 ```
 
-**TODO**
-
 Subscribe the Lambda to the SNS topic
 
 ```shell
-aws sns subscribe --topic-arn ${SCAN_RESULT_TOPIC_ARN} --notification-endpoint ${LAMBDA_ARN} --protocol lambda
+aws sns subscribe --topic-arn ${SCAN_RESULT_TOPIC_ARN} --protocol lambda --notification-endpoint ${LAMBDA_ARN} --region us-east-1
 ```
 
 ## Deinstallation
