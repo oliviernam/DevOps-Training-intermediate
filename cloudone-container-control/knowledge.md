@@ -7,6 +7,8 @@
     - [Security](#security)
     - [Governance](#governance)
     - [Configuration management](#configuration-management)
+  - [Let's get practical](#lets-get-practical)
+  - [Cloud One Container Security](#cloud-one-container-security)
   - [Links](#links)
 
 ## 10 Miles View to Kubernetes Admission Controllers
@@ -63,7 +65,75 @@ Admission controllers allow you to validate the configuration of the objects run
 
 In this way, admission controllers and policy management help make sure that applications stay in compliance within an ever-changing landscape of controls.
 
+## Let's get practical
+
+An Admission Controller Webhook is triggered when a Kubernetes resource (or resources) is created, modified or deleted. Essentially a HTTP request is sent to a specified Kubernetes Service in a namespace which returns a JSON response. Depending on that response an action is taken.
+
+There are two categories of Admission Controllers, Validating and Mutating. A Validating Admission Controller validates the incoming request and returns a binary response, yes or no based on custom logic. An example can be that if a Pod resource doesn’t have certain labels the request is rejected with a message on why. A Mutating Admission Controller modifies the incoming request based on custom logic. An example can be that if an Ingress resource doesn’t have the correct annotations, the correct annotations will be added and the resource will be admitted.
+
+With the above scenarios Admission Controllers can be very powerful and give very granular control over what goes in or out of a Kubernetes Cluster. Now let’s dive in.
+
+An example:
+
+```yaml
+kind: ValidatingWebhookConfiguration
+apiVersion: admissionregistration.k8s.io/v1beta1
+metadata:
+name: opa-validating-webhook
+webhooks:
+- name: validating-webhook.openpolicyagent.org
+    namespaceSelector:
+    matchExpressions:
+    - key: openpolicyagent.org/webhook
+        operator: NotIn
+        values:
+        - ignore
+    rules:
+    - operations: ["CREATE", "UPDATE"]
+        apiGroups: ["*"]
+        apiVersions: ["*"]
+        resources: ["*"]
+    clientConfig:
+    caBundle: "{{ cacrt.stdout }}"
+    service:
+        namespace: opa
+        name: opa
+```
+
+To deploy the webhook, simply do the usual
+
+```shell
+kubectl apply -f opa/webhook-configuration.yaml
+```
+
+The above example will ensure, that everytime a `CREATE` or `UPDATE` within any of the available `apiGroups`, `apiVersions` on any `resources`, the service within the namespace `opa` and the name `opa` is called. The service will then check all the given information of that request and will answer back with an `allow` or `deny`.
+
+A very simple logic could be the following:
+
+```yaml
+deny[msg] {
+    input.request.kind.kind == "Pod"
+    image := input.request.object.spec.containers[_].image
+    not startswith(image, "regprod.internal.corp.com/")
+    msg := sprintf("Image is not from our trusted registry: %v", [image])
+}
+```
+
+With this logic, our admission logic would reject any pod to be deployed on our cluster, when it is not pulled from the registry `regprod.internal.corp.com`. Cool, or?
+
+## Cloud One Container Security
+
+You might wonder, what all the above has to do with Cloud One...
+
+So, the answer is quite easy - Container Security effectively registeres a service as a validating webhook, whereby the policies the user did create within the Cloud One console are evaluated by a some Lambdas and a built-in Open Policy Agent.
+
+![alt text](images/architecture.png "Container Security Architecture")
+
+Effectively, our solution creates a policy management frontent and integrates with kubernetes via the designated interfaces.
+
 ## Links
 
 - <https://kubernetes.io/blog/2019/03/21/a-guide-to-kubernetes-admission-controllers/>
 - <https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#what-does-each-admission-controller-do>
+- <https://www.openpolicyagent.org/>
+- 
