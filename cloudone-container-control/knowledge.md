@@ -136,4 +136,3 @@ Effectively, our solution creates a policy management frontent and integrates wi
 - <https://kubernetes.io/blog/2019/03/21/a-guide-to-kubernetes-admission-controllers/>
 - <https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#what-does-each-admission-controller-do>
 - <https://www.openpolicyagent.org/>
-- 
