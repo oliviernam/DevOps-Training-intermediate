@@ -474,6 +474,19 @@ Subscribe the Lambda to the SNS topic
 aws sns subscribe --topic-arn ${SCAN_RESULT_TOPIC_ARN} --protocol lambda --notification-endpoint ${LAMBDA_ARN} --region ${REGION}
 ```
 
+Lastly, we need to grant the SNS service permission to invoke our function.
+
+```shell
+aws lambda add-permission \
+  --function-name FSS_Prom_Quar_Lambda \
+  --region us-east-1 \
+  --statement-id sns \
+  --action lambda:InvokeFunction \
+  --principal sns.amazonaws.com \
+  --source-arn ${SCAN_RESULT_TOPIC_ARN}
+```
+
+
 ## Demoing Promote or Quarantine
 
 Download the `eicar.com` and upload it to the scanning bucket.
@@ -522,38 +535,18 @@ If you have a lot of objets and you already now the date of the test, you can us
 aws logs describe-log-streams --log-group-name --region ${REGION} ${LOGGROUP_PQL} --log-stream-name-prefix $(date +"%Y/%m/%d")
 ```
 
-Lastly, lets build a table of scanned files 
+Lastly, lets review the scan results.
 
 ```shell
-export LOGSTREAMS_SL=$(aws logs describe-log-streams --region ${REGION} --log-group-name ${LOGGROUP_SL} | jq -r '.logStreams[] | .logStreamName')
+export LOGSTREAMS_SL=$(aws logs describe-log-streams --region ${REGION} --log-group-name ${LOGGROUP_PQL} | jq -r '.logStreams[] | .logStreamName')
 
 for ls in ${LOGSTREAMS_SL} ; do 
   aws logs get-log-events --region ${REGION} \
-    --log-group-name ${LOGGROUP_SL} \
+    --log-group-name ${LOGGROUP_PQL} \
     --log-stream-name $ls | \
-      jq -r '.events[] | select(.message | startswith("scan context") or startswith("scanner result")) | .message' ;
+      jq -r '.events[] | select(.message | contains("scanning_result")) | .message' ;
 done
 ```
-
-
-
-
-
-```shell
-export LOGSTREAM_SL=$(aws logs describe-log-streams --region ${REGION} --log-group-name ${LOGGROUP_SL} | jq -r '.logStreams | sort_by(.lastEventTimestamp)[-1].logStreamName')
-echo ${LOGSTREAM_SL}
-```
-
-```shell
-2020/09/18/[$LATEST]875f932baf734fb7b53f6e3c6ceb6e3f
-```
-
-To query scan results, execute
-
-```shell
-aws logs get-log-events --region ${REGION} --log-group-name ${LOGGROUP_SL} --log-stream-name ${LOGSTREAM_SL} | jq -r '.events[] | select(.message | startswith("scan context") or startswith("scanner result")) | .message'
-```
-
 
 ## Deinstallation
 
