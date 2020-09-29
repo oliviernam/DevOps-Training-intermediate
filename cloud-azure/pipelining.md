@@ -13,8 +13,7 @@
   - [Build the Azure Pipeline](#build-the-azure-pipeline)
     - [Create a PAT](#create-a-pat)
     - [Create a project](#create-a-project)
-    - [Fork Sample Repository](#fork-sample-repository)
-    - [Create a Source Code Repository](#create-a-source-code-repository)
+    - [Create and Populate the Source Code Repository](#create-and-populate-the-source-code-repository)
     - [Create the pipeline](#create-the-pipeline)
     - [Fix deployment.yml](#fix-deploymentyml)
   - [Integrate Image Security and Application Security into the pipeline](#integrate-image-security-and-application-security-into-the-pipeline)
@@ -222,7 +221,7 @@ az devops project create \
 #  --project ${APP_NAME}
 ```
 
-**TO IMPROVE WITHIN THE LAB: ** Get your repo credentials via the Azure DevOps UI.
+**TO IMPROVE WITHIN THE LAB: Get your repo credentials via the Azure DevOps UI Console**
 
 ```shell
 git init

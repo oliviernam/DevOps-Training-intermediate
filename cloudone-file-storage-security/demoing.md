@@ -1,7 +1,6 @@
 # Demoing CloudOne File Storage Security
 
 - [Demoing CloudOne File Storage Security](#demoing-cloudone-file-storage-security)
-  - [ToDos](#todos)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
   - [Demoing with Tags](#demoing-with-tags)
@@ -13,14 +12,9 @@
   - [Demoing Promote or Quarantine](#demoing-promote-or-quarantine)
   - [Logs with Promote or Quarantine](#logs-with-promote-or-quarantine)
     - [Identify Log Group and Log Stream](#identify-log-group-and-log-stream-1)
-  - [Deinstallation](#deinstallation)
+  - [Remove File Storage Security](#remove-file-storage-security)
 
 CloudOne File Storage Security is abbreviated by `FSS`
-
-## ToDos
-
-- Check, if we can run in a different region
-
 
 ## Prerequisites
 
@@ -459,6 +453,7 @@ Query the ScanResultTopic ARN
 
 ```shell
 export STORAGE_STACK=$(aws cloudformation list-stacks --region ${REGION} | jq --arg stack_name ${STACK_NAME} -r '.StackSummaries[] | select(.StackId | contains($stack_name) and contains("-StorageStack")) | select(.StackStatus=="CREATE_COMPLETE") | .StackName')
+
 export SCAN_RESULT_TOPIC_ARN=$(aws cloudformation list-stack-resources --region ${REGION} --stack-name ${STORAGE_STACK} | jq -r '.StackResourceSummaries[] | select(.LogicalResourceId=="ScanResultTopic") | .PhysicalResourceId')
 ```
 
@@ -548,10 +543,10 @@ for ls in ${LOGSTREAMS_SL} ; do
 done
 ```
 
-## Deinstallation
+## Remove File Storage Security
 
 Got to CloudFormation on AWS and delete the FileStorageSecurity-All-In-One-Stack. Afterwards eventually remaining Storage Stacks.
 
 Be sure to delete the policy and role named FSS_Prom_Quar as well.
 
-**At the time of writing, there is no possibility to delete orphaned stacks on the console of Cloud One.**
+*At the time of writing, there is no possibility to delete orphaned stacks on the console of Cloud One.*
