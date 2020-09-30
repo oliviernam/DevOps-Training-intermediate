@@ -178,7 +178,7 @@ az extension add --name azure-devops
 Now, login to your DevOps organization by the use of the PAT
 
 ```shell
-export DEVOPS_ORGANIZATION=<URL OF YOUR DEVOPS ORGANIZATION, starts with dev.azure.com> && \
+export DEVOPS_ORGANIZATION=<URL OF YOUR DEVOPS ORGANIZATION, starts with https://dev.azure.com> && \
   echo "export AZURE_DEVOPS_EXT_PAT=${AZURE_DEVOPS_EXT_PAT}" >> statefile.sh
 echo ${AZURE_DEVOPS_EXT_PAT} | az devops login --org ${DEVOPS_ORGANIZATION}
 az devops project list --org ${DEVOPS_ORGANIZATION}
@@ -216,7 +216,7 @@ cd ${APP_NAME}
 
 ```shell
 git init
-git remote add azure ${DEVOPS_ORGANIZATION}/${APP_NAME}/_git/${APP_NAME}
+git remote add azure https://${AZURE_DEVOPS_EXT_PAT}@${DEVOPS_ORGANIZATION//https:\/\//}/${APP_NAME}/_git/${APP_NAME}
 ```
 
 Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your Git username.
