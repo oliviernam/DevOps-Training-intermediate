@@ -2,7 +2,6 @@
 
 - [CI/CD with Azure Pipelines](#cicd-with-azure-pipelines)
   - [Prerequisites](#prerequisites)
-  - [Variable definitions](#variable-definitions)
   - [Get the code](#get-the-code)
   - [Create the Azure resources](#create-the-azure-resources)
     - [Create a Resource Group](#create-a-resource-group)
@@ -38,28 +37,6 @@
 - An Azure account
 - A CloudOne Application Security Account
 
-## Variable definitions
-
-During the lab, you're defining the following variables:
-
-```shell
-export APP_NAME=c1-app-sec-uploader
-export APP_REGISTRY=c1appsecuploaderregistry
-export CLUSTER_NAME=appcluster
-export DEVOPS_ORGANIZATION=<URL OF YOUR DEVOPS ORGANIZATION, starts with dev.azure.com>
-export GITHUB_USERNAME=<YOUR GITHUB USERNAME>
-
-export DSSC_NAMESPACE='smartcheck'
-export DSSC_USERNAME='administrator'
-export DSSC_PASSWORD='trendmicro'
-export DSSC_REGUSER='administrator'
-export DSSC_REGPASSWORD='trendmicro'
-export DSSC_AC=<SMART CHECK ACTIVATION CODE>
-
-export TREND_AP_KEY=<YOUR CLOUD ONE APPLICATION SECURITY KEY>
-export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET>
-```
-
 ## Get the code
 
 Fork the following repository containing a sample application and a Dockerfile to your GitHub account:
@@ -82,7 +59,7 @@ az group create --name ${APP_NAME} --location westeurope
 ### Create a Container Registry
 
 ```shell
-export APP_REGISTRY=c1appsecuploaderregistry-$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)
+export APP_REGISTRY=c1appsecuploaderregistry$(openssl rand -hex 4)
 az acr create --resource-group ${APP_NAME} --name ${APP_REGISTRY} --sku Basic
 ```
 

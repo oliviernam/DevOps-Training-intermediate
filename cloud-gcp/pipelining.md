@@ -137,10 +137,6 @@ export PROJECT_NUMBER="$(gcloud projects describe \
 gcloud projects add-iam-policy-binding ${PROJECT} \
     --member=serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com \
     --role=roles/container.developer
-
-# gcloud projects add-iam-policy-binding ${PROJECT} \
-#     --member=serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com \
-#     --role=roles/owner
 ```
 
 ## JSON Key File

@@ -2,7 +2,6 @@
 
 - [CI/CD with AWS CodePipeline](#cicd-with-aws-codepipeline)
   - [Prerequisites](#prerequisites)
-  - [Variable definitions](#variable-definitions)
   - [Create a Workspace](#create-a-workspace)
     - [Install Kubernetes tools](#install-kubernetes-tools)
     - [Update IAM Settings for the Workspace](#update-iam-settings-for-the-workspace)
@@ -34,29 +33,6 @@
 - A GitHub account, where you can create a repository. If you don't have one, you can create one for free.
 - An AWS account
 - A CloudOne Application Security Account
-
-## Variable definitions
-
-During the lab, you're defining the following variables:
-
-```shell
-export ROLE_NAME=ekscluster-admin
-export INSTANCE_PROFILE_NAME=${ROLE_NAME}
-export CLUSTER_NAME=ekscluster-eksctl
-export CODEBUILD_ROLE_NAME=ekscluster-codebuild
-export APP_NAME=c1-app-sec-uploader
-
-
-export DSSC_NAMESPACE='smartcheck'
-export DSSC_USERNAME='administrator'
-export DSSC_PASSWORD='trendmicro'
-export DSSC_REGUSER='administrator'
-export DSSC_REGPASSWORD='trendmicro'
-export DSSC_AC=<SMART CHECK ACTIVATION CODE>
-
-export TREND_AP_KEY=<YOUR CLOUD ONE APPLICATION SECURITY KEY>
-export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET>
-```
 
 ## Create a Workspace
 
