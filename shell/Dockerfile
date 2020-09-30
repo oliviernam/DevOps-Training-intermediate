@@ -32,6 +32,10 @@ RUN echo "${user} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/custom-users && \
 USER ${user}
 WORKDIR /home/${user}
 
+COPY saveenv-az.sh .
+COPY saveenv-aws.sh .
+COPY saveenv-gcp.sh .
+
 # Google
 RUN pip3 install requests google-auth --user && \
     export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \

@@ -12,7 +12,7 @@ services:
         uid: ${UID}
         gid: ${GID}
     volumes:
-      - ./workdir:/home/ubuntu
+      - ./workdir:/home/mcs
     environment:
       - TZ=Europe/Berlin
       - DEBIAN_FRONTEND=noninteractive
