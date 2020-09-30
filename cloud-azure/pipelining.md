@@ -2,8 +2,9 @@
 
 - [CI/CD with Azure Pipelines](#cicd-with-azure-pipelines)
   - [Prerequisites](#prerequisites)
-  - [Get the code](#get-the-code)
-  - [Create the Azure resources](#create-the-azure-resources)
+  - [Connect to Azure](#connect-to-azure)
+    - [Azure Cloud Shell](#azure-cloud-shell)
+    - [Multi Cloud Shell](#multi-cloud-shell)
     - [Create a Resource Group](#create-a-resource-group)
     - [Create a Container Registry](#create-a-container-registry)
     - [Create a Kubernetes Cluster](#create-a-kubernetes-cluster)
@@ -14,7 +15,6 @@
     - [Create a project](#create-a-project)
     - [Fork Sample Repository](#fork-sample-repository)
     - [Create the pipeline](#create-the-pipeline)
-    - [Fix deployment.yml](#fix-deploymentyml)
   - [Integrate Image Security and Application Security into the pipeline](#integrate-image-security-and-application-security-into-the-pipeline)
     - [Variable definitions for the pipeline](#variable-definitions-for-the-pipeline)
     - [Integrate Application Security in the deployment manifest](#integrate-application-security-in-the-deployment-manifest)
@@ -22,7 +22,7 @@
   - [Learn more](#learn-more)
   - [Additional Resources](#additional-resources)
   - [Appendix](#appendix)
-    - [Cloud Shell Timeouts](#cloud-shell-timeouts)
+    - [Enable persistence for the environment variables](#enable-persistence-for-the-environment-variables)
     - [Example `manifests/deployment.yml`](#example-manifestsdeploymentyml)
     - [Example `manifests/service.yml`](#example-manifestsserviceyml)
     - [Example `azure-pipelines.yml`](#example-azure-pipelinesyml)
@@ -38,36 +38,51 @@
 - An Azure account
 - A CloudOne Application Security Account
 
-## Get the code
+## Connect to Azure
 
-Fork the following repository containing a sample application and a Dockerfile to your GitHub account:
+You can either work via the Azure Cloud Shell or by using the Multi Cloud Shell Container.
 
-<https://github.com/mawinkler/c1-app-sec-uploader>
-
-## Create the Azure resources
+### Azure Cloud Shell
 
 Sign in to the Azure Portal <https://portal.azure.com/>, and then select the Cloud Shell button in the upper-right corner.
 
 Info: <https://docs.microsoft.com/en-us/azure/cloud-shell/overview>
 
+### Multi Cloud Shell
+
+From within the `shell`-directory of the devops-training run
+
+```shell
+./build.sh
+./start.sh
+```
+
+Now authtenticate to Azure via
+
+```shell
+az login
+```
+
+and follow the process.
+
 ### Create a Resource Group
 
 ```shell
-export APP_NAME=c1-app-sec-uploader && echo "export APP_NAME=${APP_NAME}" >> statefile.sh
+export APP_NAME=c1-app-sec-uploader
 az group create --name ${APP_NAME} --location westeurope
 ```
 
 ### Create a Container Registry
 
 ```shell
-export APP_REGISTRY=c1appsecuploaderregistry$(openssl rand -hex 4) && echo "export APP_REGISTRY=${APP_REGISTRY}" >> statefile.sh
+export APP_REGISTRY=c1appsecuploaderregistry$(openssl rand -hex 4)
 az acr create --resource-group ${APP_NAME} --name ${APP_REGISTRY} --sku Basic
 ```
 
 ### Create a Kubernetes Cluster
 
 ```shell
-export CLUSTER_NAME=appcluster && echo "export CLUSTER_NAME=${CLUSTER_NAME}" >> statefile.sh
+export CLUSTER_NAME=appcluster
 az aks create \
     --resource-group ${APP_NAME} \
     --name ${CLUSTER_NAME} \
@@ -99,35 +114,31 @@ aks-nodepool1-30577774-vmss000001   Ready    agent   39m   v1.16.10
 Define some variables
 
 ```shell
-export DSSC_NAMESPACE='smartcheck' && echo "export DSSC_NAMESPACE=${DSSC_NAMESPACE}" >> statefile.sh
-export DSSC_USERNAME='administrator' && echo "export DSSC_USERNAME=${DSSC_USERNAME}" >> statefile.sh
-export DSSC_PASSWORD='trendmicro' && echo "export DSSC_PASSWORD=${DSSC_PASSWORD}" >> statefile.sh
-export DSSC_REGUSER='administrator' && echo "export DSSC_REGUSER=${DSSC_REGUSER}" >> statefile.sh
-export DSSC_REGPASSWORD='trendmicro' && echo "export DSSC_REGPASSWORD=${DSSC_REGPASSWORD}" >> statefile.sh
+export DSSC_NAMESPACE='smartcheck'
+export DSSC_USERNAME='administrator'
+export DSSC_PASSWORD='trendmicro'
+export DSSC_REGUSER='administrator'
+export DSSC_REGPASSWORD='trendmicro'
 ```
 
 Set the activation code for Smart Check
 
 ```shell
-export DSSC_AC=<SMART CHECK ACTIVATION CODE> && echo "export DSSC_AC=${DSSC_AC}" >> statefile.sh
+export DSSC_AC=<SMART CHECK ACTIVATION CODE>
 ```
 
 Finally, run
 
 ```shell
 curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | bash
-export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}') && \
-  echo "export DSSC_HOST_IP=${DSSC_HOST_IP}" >> statefile.sh
-export DSSC_HOST="smartcheck-${DSSC_HOST_IP//./-}.nip.io" && \
-  echo "export DSSC_HOST=${DSSC_HOST}" >> statefile.sh
+export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+export DSSC_HOST="smartcheck-${DSSC_HOST_IP//./-}.nip.io"
 
 or
 
 curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-ip.sh | bash
-export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}') && \
-  echo "export DSSC_HOST_IP=${DSSC_HOST_IP}" >> statefile.sh
-export DSSC_HOST="smartcheck-${DSSC_HOST_IP//./-}.nip.io" && \
-  echo "export DSSC_HOST=${DSSC_HOST}" >> statefile.sh
+export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+export DSSC_HOST="smartcheck-${DSSC_HOST_IP//./-}.nip.io"
 ```
 
 ## Configure CloudOne Application Security
@@ -135,8 +146,8 @@ export DSSC_HOST="smartcheck-${DSSC_HOST_IP//./-}.nip.io" && \
 Define the Application Security Key and Secret.
 
 ```shell
-export TREND_AP_KEY=<YOUR CLOUD ONE APPLICATION SECURITY KEY> && echo "export TREND_AP_KEY=${TREND_AP_KEY}" >> statefile.sh
-export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET> && echo "export TREND_AP_SECRET=${TREND_AP_SECRET}" >> statefile.sh
+export TREND_AP_KEY=<YOUR CLOUD ONE APPLICATION SECURITY KEY>
+export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET>
 ```
 
 ## Build the Azure Pipeline
@@ -156,7 +167,7 @@ Press `New Token`. Give the Token a name (e.g. `MyToken`), set Organization to `
 Copy the token and store it somewhere secure.
 
 ```shell
-export AZURE_DEVOPS_EXT_PAT=<YOUR_PAT> && echo "export AZURE_DEVOPS_EXT_PAT=${AZURE_DEVOPS_EXT_PAT}" >> statefile.sh
+export AZURE_DEVOPS_EXT_PAT=<YOUR_PAT>
 ```
 
 To store it in the environment.
@@ -175,11 +186,12 @@ We only need the `azure-devops` to be installed by
 az extension add --name azure-devops
 ```
 
-Now, login to your DevOps organization by the use of the PAT
+Now, login to your DevOps organization by the use of the PAT. The variable you're defining in the following should look similar like this:
+
+`https://dev.azure.com/markus-winkler`
 
 ```shell
-export DEVOPS_ORGANIZATION=<URL OF YOUR DEVOPS ORGANIZATION, starts with https://dev.azure.com> && \
-  echo "export AZURE_DEVOPS_EXT_PAT=${AZURE_DEVOPS_EXT_PAT}" >> statefile.sh
+export DEVOPS_ORGANIZATION=<URL OF YOUR DEVOPS ORGANIZATION>
 echo ${AZURE_DEVOPS_EXT_PAT} | az devops login --org ${DEVOPS_ORGANIZATION}
 az devops project list --org ${DEVOPS_ORGANIZATION}
 ```
@@ -197,8 +209,6 @@ az devops project create \
 
 Alongside to the project a git repo is automatically created.
 
-**TO IMPROVE WITHIN THE LAB: Get your repo credentials via the Azure DevOps UI Console**
-
 ### Fork Sample Repository
 
 We are now going to fork the sample Kubernetes service so that we will be able modify the repository and trigger builds.
@@ -209,7 +219,7 @@ Login to GitHub and fork the Uploaders app:
 And now clone it from your git:
 
 ```shell
-export GITHUB_USERNAME="[YOUR GITHUB USERNAME]" && echo "export GITHUB_USERNAME=${GITHUB_USERNAME}" >> statefile.sh
+export GITHUB_USERNAME="[YOUR GITHUB USERNAME]"
 git clone https://github.com/${GITHUB_USERNAME}/${APP_NAME}.git
 cd ${APP_NAME}
 ```
@@ -257,22 +267,22 @@ This command is in preview. It may be changed/removed in a future release.
 
 Which template do you want to use for this pipeline?
 
-Please enter a choice [Default choice(1)]: `Deploy to Azure Kubernetes Service`
+Please enter a choice: `Deploy to Azure Kubernetes Service`
 
 The template requires a few inputs. We will help you fill them out
 Using your default Azure subscription Nutzungsbasierte Bezahlung for fetching AKS clusters.
 Which kubernetes cluster do you want to target for this pipeline?
 
-Please enter a choice [Default choice(1)]: `appcluster`
+Please enter a choice: `appcluster`
 
 Which kubernetes namespace do you want to target?
 
-Please enter a choice [Default choice(1)]: `default`
+Please enter a choice: `default`
 
 Using your default Azure subscription Nutzungsbasierte Bezahlung for fetching Azure Container Registries.
 Which Azure Container Registry do you want to use for this pipeline?
 
-Please enter a choice [Default choice(1)]: `c1appsecuploaderregistry`
+Please enter a choice: `c1appsecuploaderregistryA1B2C3D4`
 
 Enter a value for Image Name [Press Enter for default: cappsecuploaderdev]:
 
@@ -282,7 +292,7 @@ Please enter a value for Enable Review App flow for Pull Requests:
 
 Using your default Azure subscription `YOUR SUBSCRIPTION NAME` for creating Azure RM connection.
 Which Azure Container Registry do you want to use for this pipeline?
-Please enter a choice [Default choice(1)]: c1appsecuploaderregistry
+Please enter a choice: `c1appsecuploaderregistry`
 
 Enter a value for Image Name [Press Enter for default: cappsecuploaderdev]:
 
@@ -292,7 +302,7 @@ Please enter a value for Enable Review App flow for Pull Requests:
 
 Do you want to view/edit the template yaml before proceeding?
 
-Please enter a choice [Default choice(1)]: `Continue with generated yaml`
+Please enter a choice: `Continue with generated yaml`
 
 Files to be added to your repository (3)
 
@@ -302,7 +312,7 @@ Files to be added to your repository (3)
 
 How do you want to commit the files to the repository?
 
-Please enter a choice [Default choice(1)]: `Commit directly to the master branch.`
+Please enter a choice: `Commit directly to the master branch.`
 
 Checking in file manifests/deployment.yml in the Azure repo c1-app-sec-uploader
 Checking in file manifests/service.yml in the Azure repo c1-app-sec-uploader
@@ -314,35 +324,6 @@ Successfully created a pipeline with Name: c1-app-sec-uploader, Id: 13.
 `<<<`
 
 Done, puuh.
-
-### Fix deployment.yml
-
-As of writing the lab, there is an error in the deployment.yml generation.
-
-To fix it do the following:
-
-```shell
-git pull azure master
-code manifests/deployment.yml
-```
-
-Correct apiVersion to
-
-```yaml
-apiVersion : apps/v1
-```
-
-Add the selector within the DeploymentSpec
-
-```yaml
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: <same as name in metadata>
-```
-
-Your full deployment.yml is shown in the appendix [`manifests/deployment.yml`](#manifestsdeploymentyml)
 
 ## Integrate Image Security and Application Security into the pipeline
 
@@ -406,33 +387,29 @@ az pipelines variable create \
 
 ### Integrate Application Security in the deployment manifest
 
-Reopen the deployment.yml and modify the `spec` as shown below
-
-```shell
-code manifests/deployment.yml
-```
+Open the `manifests/deployment.yml` with your preferred editor and modify the `containers`-part as shown below. Insert the `env`-block after the `image:`-line.
 
 ```yaml
+...
+spec:
+  ...
+  template:
+    ...
     spec:
       containers:
-        - name: <same as name in metadata>
-          image: ${APP_REGISTRY}.azurecr.io/<same as name in metadata>
+        - name: cappsecuploader
+          image: c1appsecuploaderregistryA1B2C3D4.azurecr.io/cappsecuploader
           env:
           - name: TREND_AP_KEY
             value: _TREND_AP_KEY
           - name: TREND_AP_SECRET
             value: _TREND_AP_SECRET
-          ports:
-          - containerPort: 80
+          ...
 ```
 
 ### Integrate Image Security and Application Security into the pipeline definition
 
-Now, modify the pipeline.
-
-```shell
-code azure-pipelines.yml
-```
+Now, modify the pipeline by edditing `azure-pipelines.yml`.
 
 First, within the `Build`stage, split the `buildAndPush`-task in two seperate build and a push tasks, insert the scan task in the middle. It should look like the below code fragment.
 
@@ -509,6 +486,8 @@ git commit . -m "cloudone integrated"
 git push azure master
 ```
 
+You do find your source code repository within your devops organization and the project.
+
 ## Learn more
 
 We invite you to learn more about:
@@ -533,19 +512,20 @@ We invite you to learn more about:
 
 ## Appendix
 
-### Cloud Shell Timeouts
+### Enable persistence for the environment variables
 
-During the definition of variables, you should have created a file called statefile.sh. After a timeout of the cloud shell source the script to redefine the variables.
+To make the defined environment variables persistent run
 
 ```shell
-. ~/statefile.sh
+~/saveenv-az.sh
 ```
 
+before you shut down the container.
+
+Restore with
+
 ```shell
-eval "cat <<EOF
-$(<cloudbuild.yaml)
-EOF
-" 2> /dev/null > cloudbuild.yaml
+. ~/.az-lab.sh
 ```
 
 ### Example `manifests/deployment.yml`
