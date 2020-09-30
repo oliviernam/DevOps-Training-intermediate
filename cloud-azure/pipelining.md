@@ -82,7 +82,7 @@ az group create --name ${APP_NAME} --location westeurope
 ### Create a Container Registry
 
 ```shell
-export APP_REGISTRY=c1appsecuploaderregistry
+export APP_REGISTRY=c1appsecuploaderregistry-$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)
 az acr create --resource-group ${APP_NAME} --name ${APP_REGISTRY} --sku Basic
 ```
 
