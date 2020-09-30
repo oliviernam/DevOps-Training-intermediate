@@ -2,3 +2,5 @@
 cloud-azure/quick.md
 cloud-gcp/quick.md
 cloud-gcp/link.md
+shell/workdir
+shell/.env
