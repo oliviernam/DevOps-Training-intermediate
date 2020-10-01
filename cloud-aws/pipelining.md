@@ -13,9 +13,9 @@
   - [Create an Elastic Kubernetes Services Cluster](#create-an-elastic-kubernetes-services-cluster)
     - [Create an SSH key for Worker Access](#create-an-ssh-key-for-worker-access)
     - [Create an AWS KMS Custom Managed Key (CMK) for Secrets Encryption](#create-an-aws-kms-custom-managed-key-cmk-for-secrets-encryption)
-    - [Install EKS tools and Helm](#install-eks-tools-and-helm)
+    - [Install EKS tools and Helm (if not using the Multi Cloud Shell)](#install-eks-tools-and-helm-if-not-using-the-multi-cloud-shell)
     - [Launch an EKS cluster](#launch-an-eks-cluster)
-  - [Deploy CloudOne Image Security](#deploy-cloudone-image-security)
+  - [Deploy Smart Check](#deploy-smart-check)
   - [CI/CD with CodePipeline](#cicd-with-codepipeline)
     - [Create IAM Role for EKS](#create-iam-role-for-eks)
     - [Modify AWS-Auth ConfigMap](#modify-aws-auth-configmap)
@@ -260,7 +260,7 @@ Now, let’s save the MASTER_ARN environment variable into the bash_profile
 echo "export MASTER_ARN=${MASTER_ARN}" | tee -a ~/.bash_profile
 ```
 
-### Install EKS tools and Helm
+### Install EKS tools and Helm (if not using the Multi Cloud Shell)
 
 For this module, we need to download the eksctl binary:
 
@@ -344,7 +344,7 @@ ip-192-168-56-29.eu-central-1.compute.internal    Ready    <none>   3m46s   v1.1
 ip-192-168-66-142.eu-central-1.compute.internal   Ready    <none>   3m45s   v1.17.9-eks-4c6976
 ```
 
-## Deploy CloudOne Image Security
+## Deploy Smart Check
 
 Define some variables
 
@@ -366,7 +366,7 @@ Finally, run
 
 ```shell
 export DNS_NAME="*.${AWS_REGION}.elb.amazonaws.com" && \
-  curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-dns.sh | bash
+  curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-smart-check/deploy-dns.sh | bash
 export DSSC_HOST=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 ```
 
@@ -476,7 +476,7 @@ curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/${APP_NAME}-
 
 You will realize a couple of chapters. First are the `Parameters` for the pipeline, which you can either leave with the defaults or customize.
 
-The more interesting part is the `Resources` chapter, which defines all used resources for our pipeline. In our case this includes ECR, S3, CodeBuild, CodePipeline, CodeCommit, ServiceRoles, CloudOne Image Security.
+The more interesting part is the `Resources` chapter, which defines all used resources for our pipeline. In our case this includes ECR, S3, CodeBuild, CodePipeline, CodeCommit, ServiceRoles, Smart Check.
 
 Ok, now let's populate the paramenters, but set your Application Security credentials first:
 

@@ -7,7 +7,7 @@
     - [Prepare for our GKE Cluster](#prepare-for-our-gke-cluster)
     - [Create GKE Cluster](#create-gke-cluster)
   - [JSON Key File](#json-key-file)
-  - [Deploy CloudOne Image Security](#deploy-cloudone-image-security)
+  - [Deploy Smart Check](#deploy-smart-check)
   - [Configure CloudOne Application Security](#configure-cloudone-application-security)
   - [Prepare the Cloud Build, Publishing and Kubernetes Deployment](#prepare-the-cloud-build-publishing-and-kubernetes-deployment)
     - [Fork Sample Repository](#fork-sample-repository)
@@ -160,7 +160,7 @@ gcloud iam service-accounts keys create ${GCR_SERVICE_ACCOUNT}_keyfile.json --ia
 
 Your environment is ready!
 
-## Deploy CloudOne Image Security
+## Deploy Smart Check
 
 First, a note on certificates.
 
@@ -204,7 +204,7 @@ export DSSC_HOST=$(gcloud compute addresses describe smartcheck-address --global
 To deploy Smart Check as a NodePort service, run
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-np.sh | bash
+curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-smart-check/deploy-np.sh | bash
 ```
 
 or
@@ -306,7 +306,7 @@ echo "https://smartcheck-${DSSC_HOST//./-}.nip.io"
 To finalize the setup of Smartcheck and do the initial password change run
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-cpw.sh | bash
+curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-smart-check/deploy-cpw.sh | bash
 ```
 
 or
@@ -396,7 +396,7 @@ The repository can be accessed via
 
 ### Create Kubernetes Deployment and Service Definition
 
-In the next chapters, we're defining everything which is required to run the pipeline in GCP Cloud Build. This includes the integration of Image Security and Application Security, of course.
+In the next chapters, we're defining everything which is required to run the pipeline in GCP Cloud Build. This includes the integration of Smart Check and Application Security, of course.
 
 First, we create our deployment and service manifests.
 

@@ -8,7 +8,7 @@
     - [Create a Resource Group](#create-a-resource-group)
     - [Create a Container Registry](#create-a-container-registry)
     - [Create a Kubernetes Cluster](#create-a-kubernetes-cluster)
-  - [Deploy CloudOne Image Security](#deploy-cloudone-image-security)
+  - [Deploy Smart Check](#deploy-smart-check)
   - [Configure CloudOne Application Security](#configure-cloudone-application-security)
   - [Build the Azure Pipeline](#build-the-azure-pipeline)
     - [Create a PAT](#create-a-pat)
@@ -16,10 +16,10 @@
     - [Fork Sample Repository](#fork-sample-repository)
     - [Populate the Azure Repository](#populate-the-azure-repository)
     - [Create the pipeline](#create-the-pipeline)
-  - [Integrate Image Security and Application Security into the pipeline](#integrate-image-security-and-application-security-into-the-pipeline)
+  - [Integrate Smart Check and Application Security into the pipeline](#integrate-smart-check-and-application-security-into-the-pipeline)
     - [Variable definitions for the pipeline](#variable-definitions-for-the-pipeline)
     - [Integrate Application Security in the deployment manifest](#integrate-application-security-in-the-deployment-manifest)
-    - [Integrate Image Security and Application Security into the pipeline definition](#integrate-image-security-and-application-security-into-the-pipeline-definition)
+    - [Integrate Smart Check and Application Security into the pipeline definition](#integrate-smart-check-and-application-security-into-the-pipeline-definition)
   - [Learn more](#learn-more)
   - [Additional Resources](#additional-resources)
   - [Appendix](#appendix)
@@ -109,7 +109,7 @@ aks-nodepool1-30577774-vmss000000   Ready    agent   39m   v1.16.10
 aks-nodepool1-30577774-vmss000001   Ready    agent   39m   v1.16.10
 ```
 
-## Deploy CloudOne Image Security
+## Deploy Smart Check
 
 Define some variables
 
@@ -130,7 +130,7 @@ export DSSC_AC=<SMART CHECK ACTIVATION CODE>
 Finally, run
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | bash
+curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-smart-check/deploy-ip.sh | bash
 export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 export DSSC_HOST="smartcheck-${DSSC_HOST_IP//./-}.nip.io"
 
@@ -327,7 +327,7 @@ Successfully created a pipeline with Name: c1-app-sec-uploader, Id: 13.
 
 Done, puuh.
 
-## Integrate Image Security and Application Security into the pipeline
+## Integrate Smart Check and Application Security into the pipeline
 
 ### Variable definitions for the pipeline
 
@@ -409,7 +409,7 @@ spec:
           ...
 ```
 
-### Integrate Image Security and Application Security into the pipeline definition
+### Integrate Smart Check and Application Security into the pipeline definition
 
 Now, modify the pipeline by edditing `azure-pipelines.yml`.
 
