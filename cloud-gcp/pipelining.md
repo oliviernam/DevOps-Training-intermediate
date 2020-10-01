@@ -17,8 +17,7 @@
     - [Create the Build Trigger](#create-the-build-trigger)
     - [Create the Build Specification cloudbuild.yaml](#create-the-build-specification-cloudbuildyaml)
     - [Trigger the Pipeline](#trigger-the-pipeline)
-  - [Appendix](#appendix)
-    - [Enable persistence for the environment variables when using Multi Cloud Shell](#enable-persistence-for-the-environment-variables-when-using-multi-cloud-shell)
+  - [Knowledge](#knowledge)
     - [Links](#links)
     - [Ingress](#ingress)
     - [Google-managed SSL certificate](#google-managed-ssl-certificate)
@@ -564,23 +563,7 @@ kubectl get svc -n ${APP_NAME} ${APP_NAME} \
 
 Lab done.
 
-## Appendix
-
-### Enable persistence for the environment variables when using Multi Cloud Shell
-
-To make the defined environment variables persistent run
-
-```shell
-~/saveenv-gcp.sh
-```
-
-before you shut down the container.
-
-Restore with
-
-```shell
-. ~/.gcp-lab.sh
-```
+## Knowledge
 
 ### Links
 

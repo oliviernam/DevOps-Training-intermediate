@@ -23,7 +23,7 @@
   - [Learn more](#learn-more)
   - [Additional Resources](#additional-resources)
   - [Appendix](#appendix)
-    - [Enable persistence for the environment variables when using Multi Cloud Shell](#enable-persistence-for-the-environment-variables-when-using-multi-cloud-shell)
+    - [Enable persistence for the environment variables](#enable-persistence-for-the-environment-variables)
     - [Example `manifests/deployment.yml`](#example-manifestsdeploymentyml)
     - [Example `manifests/service.yml`](#example-manifestsserviceyml)
     - [Example `azure-pipelines.yml`](#example-azure-pipelinesyml)
@@ -514,7 +514,7 @@ We invite you to learn more about:
 
 ## Appendix
 
-### Enable persistence for the environment variables when using Multi Cloud Shell
+### Enable persistence for the environment variables
 
 To make the defined environment variables persistent run
 

@@ -25,7 +25,6 @@
     - [Create the Buildspec](#create-the-buildspec)
     - [Create Kubernetes Deployment and Service Definition](#create-kubernetes-deployment-and-service-definition)
   - [Appendix](#appendix)
-    - [Enable persistence for the environment variables when using Multi Cloud Shell](#enable-persistence-for-the-environment-variables-when-using-multi-cloud-shell)
     - [Delete an EKS Cluster](#delete-an-eks-cluster)
     - [hash -r](#hash--r)
 
@@ -572,22 +571,6 @@ kubectl get svc -n default ${APP_NAME} -o jsonpath='{.status.loadBalancer.ingres
 Done. So, let's upload some music files :-)
 
 ## Appendix
-
-### Enable persistence for the environment variables when using Multi Cloud Shell
-
-To make the defined environment variables persistent run
-
-```shell
-~/saveenv-aws.sh
-```
-
-before you shut down the container.
-
-Restore with
-
-```shell
-. ~/.aws-lab.sh
-```
 
 ### Delete an EKS Cluster
 

@@ -6,7 +6,7 @@ ARG group=mcs
 ARG uid
 ARG gid
 
-# Root context
+# root context
 RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
 
 RUN addgroup -gid ${gid} ${group} || true
@@ -28,7 +28,7 @@ RUN echo "${user} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/custom-users && \
     echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config && \
     figlet "Multi Cloud Shell" > /etc/motd
 
-# User context
+# user context
 USER ${user}
 WORKDIR /home/${user}
 
@@ -46,9 +46,7 @@ RUN pip3 install requests google-auth --user && \
 
 # AWS
 RUN pip3 install awscli boto boto3 --user && \
-    echo 'export PATH=~/.local/bin:$PATH' >> ~/.bashrc && \
-    curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp && \
-    sudo mv -v /tmp/eksctl /usr/local/bin
+    echo 'export PATH=~/.local/bin:$PATH' >> ~/.bashrc
 
 # Azure
 RUN sudo apt-get install -y ca-certificates curl apt-transport-https lsb-release gnupg && \
