@@ -11,6 +11,7 @@
   - [Configure CloudOne Application Security](#configure-cloudone-application-security)
   - [Prepare the Cloud Build, Publishing and Kubernetes Deployment](#prepare-the-cloud-build-publishing-and-kubernetes-deployment)
     - [Fork Sample Repository](#fork-sample-repository)
+    - [Populate the Cloud Source Repository](#populate-the-cloud-source-repository)
     - [Create a Cloud Source Repository](#create-a-cloud-source-repository)
     - [Create Kubernetes Deployment and Service Definition](#create-kubernetes-deployment-and-service-definition)
     - [Create the Build Trigger](#create-the-build-trigger)
@@ -350,10 +351,12 @@ export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET>
 
 ### Fork Sample Repository
 
-We are now going to fork the sample Kubernetes service so that we will be able modify the repository and trigger builds.
+We are now going to fork the sample Kubernetes service so that we will be able modify the repository and trigger builds. If you already forked the repo because of another lab you did before, there's no need to do it again. In that case, simply continue with cloning it to your  shell.
 
 Login to GitHub and fork the Uploaders app:
 <https://github.com/mawinkler/c1-app-sec-uploader>
+
+### Populate the Cloud Source Repository
 
 And now clone it from your git:
 

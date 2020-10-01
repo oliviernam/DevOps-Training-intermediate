@@ -429,7 +429,7 @@ kubectl patch configmap/aws-auth -n kube-system --patch "$(cat /tmp/aws-auth-pat
 
 ### Fork Sample Repository
 
-We are now going to fork the sample Kubernetes service so that we will be able modify the repository and trigger builds.
+We are now going to fork the sample Kubernetes service so that we will be able modify the repository and trigger builds. If you already forked the repo because of another lab you did before, there's no need to do it again. In that case, simply continue with cloning it to your  shell.
 
 Login to GitHub and fork the Uploaders app:
 
