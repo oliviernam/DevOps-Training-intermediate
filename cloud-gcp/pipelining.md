@@ -2,7 +2,9 @@
 
 - [CI/CD with GCP Cloud Build](#cicd-with-gcp-cloud-build)
   - [Prerequisites](#prerequisites)
-  - [Create the GCP resources](#create-the-gcp-resources)
+  - [Connect to GCP](#connect-to-gcp)
+    - [GCP Cloud Shell](#gcp-cloud-shell)
+    - [Multi Cloud Shell](#multi-cloud-shell)
     - [Create a Workspace](#create-a-workspace)
     - [Prepare for our GKE Cluster](#prepare-for-our-gke-cluster)
     - [Create GKE Cluster](#create-gke-cluster)
@@ -30,17 +32,38 @@
 
 ## Prerequisites
 
-## Create the GCP resources
+## Connect to GCP
 
-### Create a Workspace
+You can either work via the GCP Cloud Shell or by using the Multi Cloud Shell Container.
+
+### GCP Cloud Shell
 
 From the Cloud Console, click Activate Cloud Shell `>_`
 
-This virtual machine is loaded with all the development tools you'll need. It offers a persistent 5GB home directory and runs in Google Cloud, greatly enhancing network performance and authentication. Much, if not all, of your work in this codelab can be done with simply a browser or your Chromebook.
+This virtual machine is loaded with all the development tools you'll need. It offers a persistent 5GB home directory and runs in Google Cloud, greatly enhancing network performance and authentication.
 
-Once connected to Cloud Shell, you should see that you are already authenticated and that the project is already set to your project ID.
+### Multi Cloud Shell
 
-Run the following command in Cloud Shell to confirm that you are authenticated:
+From within the `shell`-directory of the devops-training run
+
+```shell
+./build.sh
+./start.sh
+```
+
+Now authtenticate to GCP via
+
+```shell
+gcloud auth login
+```
+
+and follow the process.
+
+### Create a Workspace
+
+Once connected, you should see that you are already authenticated and that the project is already set to your project ID.
+
+Run the following command to confirm that you are authenticated:
 
 ```shell
 gcloud auth list
@@ -54,14 +77,21 @@ gcloud auth login
 
 and follow the process.
 
-Note: The gcloud command-line tool is the powerful and unified command-line tool in Google Cloud. It comes preinstalled in Cloud Shell. You will notice its support for tab completion. For more information, see gcloud command-line tool overview.
+Note: The gcloud command-line tool is the powerful and unified command-line tool in Google Cloud. It comes preinstalled in Cloud Shell and MCS.
 
 ### Prepare for our GKE Cluster
+
+First, setup a project for the training
+
+```shell
+export PROJECT_ID=devops-training-$(openssl rand -hex 4)
+gcloud projects create ${PROJECT_ID} --name devops-training
+```
 
 Set up some variables.
 
 ```shell
-export PROJECT=$(gcloud info --format='value(config.project)')
+#$(gcloud info --format='value(config.project)')
 export ZONE=europe-west2-b
 export CLUSTER=gke-deploy-cluster
 ```
@@ -69,7 +99,7 @@ export CLUSTER=gke-deploy-cluster
 Store values in gcloud config.
 
 ```shell
-gcloud config set project $PROJECT
+gcloud config set project ${PROJECT_ID}
 gcloud config set compute/zone $ZONE
 ```
 
@@ -78,20 +108,6 @@ Run the following commands to see your preset account and project. When you crea
 ```shell
 gcloud config list project
 gcloud config list compute/zone
-```
-
-Make sure that the following APIs are enabled in the Google Cloud Console:
-
-- GKE API
-- Container Registry API
-- Cloud Build API
-- Cloud Source Repositories API
-
-```shell
-gcloud services enable container.googleapis.com \
-    containerregistry.googleapis.com \
-    cloudbuild.googleapis.com \
-    sourcerepo.googleapis.com
 ```
 
 If you're working with a new project, you likely need to enable billing and afterwards the compute API within our project. For that, we first need to look up available billing accounts.
@@ -108,14 +124,26 @@ ACCOUNT_ID            NAME                 OPEN  MASTER_ACCOUNT_ID
 We now link that billing account to our project.
 
 ```shell
-gcloud alpha billing projects link $PROJECT \
+gcloud alpha billing projects link ${PROJECT_id} \
   --billing-account 019XXX-6XXXX9-4XXXX1
 ```
 
-And finally enable the API.
+Make sure that the following APIs are enabled in the Google Cloud Console:
+
+- GKE API
+- Container Registry API
+- Cloud Build API
+- Cloud Source Repositories API
+- Compute API
 
 ```shell
-gcloud services enable compute.googleapis.com
+gcloud services enable \
+    container.googleapis.com \
+    containerregistry.googleapis.com \
+    cloudbuild.googleapis.com \
+    sourcerepo.googleapis.com \
+    compute.googleapis.com \
+    cloudresourcemanager.googleapis.com
 ```
 
 ### Create GKE Cluster
@@ -124,7 +152,7 @@ Start your cluster with three nodes.
 
 ```shell
 gcloud container clusters create ${CLUSTER} \
-    --project=${PROJECT} \
+    --project=${PROJECT_ID} \
     --zone=${ZONE} \
     --release-channel=rapid \
     --scopes "https://www.googleapis.com/auth/projecthosting,storage-rw"
@@ -136,7 +164,7 @@ Grant Cloud Build rights to your cluster.
 export PROJECT_NUMBER="$(gcloud projects describe \
     $(gcloud config get-value core/project -q) --format='get(projectNumber)')"
 
-gcloud projects add-iam-policy-binding ${PROJECT} \
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
     --member=serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com \
     --role=roles/container.developer
 ```
@@ -154,9 +182,9 @@ export GCR_SERVICE_ACCOUNT=service-gcrsvc
 
 gcloud iam service-accounts create ${GCR_SERVICE_ACCOUNT}
 
-gcloud projects add-iam-policy-binding ${PROJECT} --member "serviceAccount:${GCR_SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com" --role "roles/storage.admin"
+gcloud projects add-iam-policy-binding ${PROJECT_ID} --member "serviceAccount:${GCR_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com" --role "roles/storage.admin"
 
-gcloud iam service-accounts keys create ${GCR_SERVICE_ACCOUNT}_keyfile.json --iam-account ${GCR_SERVICE_ACCOUNT}@${PROJECT}.iam.gserviceaccount.com
+gcloud iam service-accounts keys create ${GCR_SERVICE_ACCOUNT}_keyfile.json --iam-account ${GCR_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
 ```
 
 Your environment is ready!
@@ -205,13 +233,7 @@ export DSSC_HOST=$(gcloud compute addresses describe smartcheck-address --global
 To deploy Smart Check as a NodePort service, run
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-smart-check/deploy-np.sh | bash
-```
-
-or
-
-```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-np.sh | bash
+curl -sSL https://gist.githubusercontent.com/mawinkler/5421b398d4f46073f5f854d0485987bc/raw/9eefff41cc1f2511fd80f7fdf2f3c5a5db825d7e/deploy-np.sh | bash
 ```
 
 But beware, Smart Check will not be accessible via the internet as of now, since we deployed it as a NodePort service only.
@@ -265,7 +287,7 @@ kubectl -n ${DSSC_NAMESPACE} apply -f smartcheck-managed-ingress.yml
 It will take a couple of minutes (15 to 20) to get the certificates and the load balancer in configured active state. You can verify the status with
 
 ```shell
-watch kubectl -n ${DSSC_NAMESPACE} describe managedcertificates
+watch "kubectl -n ${DSSC_NAMESPACE} get managedcertificates -o json | jq -r '.items[].status.domainStatus[].status'"
 ```
 
 ```text
@@ -307,13 +329,7 @@ echo "https://smartcheck-${DSSC_HOST//./-}.nip.io"
 To finalize the setup of Smartcheck and do the initial password change run
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-smart-check/deploy-cpw.sh | bash
-```
-
-or
-
-```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-cpw.sh | bash
+curl -sSL https://gist.githubusercontent.com/mawinkler/9a64134f1398d09f69e6c8549cf80755/raw/59b2947e1580390d9531e2aed062fcd45df24414/deploy-cpw.sh | bash
 ```
 
 Next, we add the Google Container Registry to Smart Check.
@@ -371,10 +387,11 @@ cd ${APP_NAME}
 ### Create a Cloud Source Repository
 
 ```shell
+export PROJECT_ID=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
 gcloud source repos create ${APP_NAME}
 git init
 git config credential.helper gcloud.sh
-git remote add gcp https://source.developers.google.com/p/${PROJECT}/r/${APP_NAME}
+git remote add gcp https://source.developers.google.com/p/${PROJECT_ID}/r/${APP_NAME}
 ```
 
 Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your Git username.
@@ -393,7 +410,7 @@ git push gcp master
 ```
 
 The repository can be accessed via
-<https://source.developers.google.com/p/${PROJECT}/r/${APP_NAME}>
+<https://source.developers.google.com/p/${PROJECT_ID}/r/${APP_NAME}>
 
 ### Create Kubernetes Deployment and Service Definition
 
@@ -462,38 +479,14 @@ EOF
 Here, we set up a build trigger to watch for changes in the source code version control system.
 
 ```shell
-# export DSSC_REG_HOST=gcr.io
-# export DSSC_REGUSER=_json_key
-# export DSSC_REGPASSWORD=$(cat ${GCR_SERVICE_ACCOUNT}_keyfile.json | jq tostring)
-
-# cat <<EOF > build-trigger.json
-# {
-#   "triggerTemplate": {
-#     "projectId": "${PROJECT}",
-#     "repoName": "${IMAGE_NAME}",
-#     "branchName": "master"
-#   },
-#   "description": "master",
-#   "substitutions": {
-#     "_CLOUDSDK_COMPUTE_ZONE": "${ZONE}",
-#     "_CLOUDSDK_CONTAINER_CLUSTER": "${CLUSTER}",
-#     "_CLOUDONE_IMAGESECURITY_HOST": "smartcheck-${DSSC_HOST//./-}.nip.io",
-#     "_CLOUDONE_IMAGESECURITY_USER": "${DSSC_USERNAME}",
-#     "_CLOUDONE_IMAGESECURITY_PASSWORD": "${DSSC_PASSWORD}",
-#     "_CLOUDONE_PRESCAN_HOST": "${DSSC_REG_HOST}",
-#     "_CLOUDONE_PRESCAN_USER": "${DSSC_REGUSER}",
-#     "_CLOUDONE_PRESCAN_PASSWORD": '${DSSC_REGPASSWORD}',
-#     "_CLOUDONE_TREND_AP_KEY": "${TREND_AP_KEY}",
-#     "_CLOUDONE_TREND_AP_SECRET": "${TREND_AP_SECRET}"
-#   },
-#   "filename": "cloudbuild.yaml"
-# }
-# EOF
+# Read service keyfile
+export DSSC_REG_GCR_JSON=$(cat ${GCR_SERVICE_ACCOUNT}_keyfile.json | jq tostring)
+export CLOUDONE_IMAGESECURITY_PULL_AUTH='{"username":"_json_token","password":'${DSSC_REG_GCR_JSON}'}'
 
 cat <<EOF > build-trigger.json
 {
   "triggerTemplate": {
-    "projectId": "${PROJECT}",
+    "projectId": "${PROJECT_ID}",
     "repoName": "${IMAGE_NAME}",
     "branchName": "master"
   },
@@ -504,6 +497,40 @@ cat <<EOF > build-trigger.json
     "_CLOUDONE_IMAGESECURITY_HOST": "smartcheck-${DSSC_HOST//./-}.nip.io",
     "_CLOUDONE_IMAGESECURITY_USER": "${DSSC_USERNAME}",
     "_CLOUDONE_IMAGESECURITY_PASSWORD": "${DSSC_PASSWORD}",
+    "_CLOUDONE_IMAGESECURITY_PULL_AUTH": "${CLOUDONE_IMAGESECURITY_PULL_AUTH}",
+    "_CLOUDONE_TREND_AP_KEY": \'${TREND_AP_KEY}\',
+    "_CLOUDONE_TREND_AP_SECRET": "${TREND_AP_SECRET}"
+  },
+  "filename": "cloudbuild.yaml"
+}
+EOF
+
+curl -X POST \
+    https://cloudbuild.googleapis.com/v1/projects/${PROJECT_ID}/triggers \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $(gcloud config config-helper --format='value(credential.access_token)')" \
+    --data-binary @build-trigger.json
+
+# ALTERNATIVE
+
+export DSSC_REG_GCR_JSON=$(cat ${GCR_SERVICE_ACCOUNT}_keyfile.json)
+export CLOUDONE_IMAGESECURITY_PULL_AUTH=$(echo '{"username":"_json_token","password":'${DSSC_REG_GCR_JSON}'}' | jq tostring)
+
+cat <<EOF > build-trigger.json
+{
+  "triggerTemplate": {
+    "projectId": "${PROJECT_ID}",
+    "repoName": "${IMAGE_NAME}",
+    "branchName": "master"
+  },
+  "description": "master",
+  "substitutions": {
+    "_CLOUDSDK_COMPUTE_ZONE": "${ZONE}",
+    "_CLOUDSDK_CONTAINER_CLUSTER": "${CLUSTER}",
+    "_CLOUDONE_IMAGESECURITY_HOST": "smartcheck-${DSSC_HOST//./-}.nip.io",
+    "_CLOUDONE_IMAGESECURITY_USER": "${DSSC_USERNAME}",
+    "_CLOUDONE_IMAGESECURITY_PASSWORD": "${DSSC_PASSWORD}",
+    "_CLOUDONE_IMAGESECURITY_PULL_AUTH": ${CLOUDONE_IMAGESECURITY_PULL_AUTH},
     "_CLOUDONE_TREND_AP_KEY": "${TREND_AP_KEY}",
     "_CLOUDONE_TREND_AP_SECRET": "${TREND_AP_SECRET}"
   },
@@ -512,7 +539,7 @@ cat <<EOF > build-trigger.json
 EOF
 
 curl -X POST \
-    https://cloudbuild.googleapis.com/v1/projects/${PROJECT}/triggers \
+    https://cloudbuild.googleapis.com/v1/projects/${PROJECT_ID}/triggers \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $(gcloud config config-helper --format='value(credential.access_token)')" \
     --data-binary @build-trigger.json
@@ -630,7 +657,7 @@ gcloud alpha builds triggers run master --branch=master
 
 ```shell
 # by tag
-gcloud builds submit --tag gcr.io/${PROJECT}/${IMAGE_NAME}
+gcloud builds submit --tag gcr.io/${PROJECT_ID}/${IMAGE_NAME}
 ```
 
 ### Delete a cluster
