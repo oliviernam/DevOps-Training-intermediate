@@ -130,13 +130,7 @@ export DSSC_AC=<SMART CHECK ACTIVATION CODE>
 Finally, run
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-smart-check/deploy-ip.sh | bash
-export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-export DSSC_HOST="smartcheck-${DSSC_HOST_IP//./-}.nip.io"
-
-or
-
-curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-ip.sh | bash
+curl -sSL https://gist.githubusercontent.com/mawinkler/7b9cc48a8b2cf96e07e4eadd6e8e9497/raw/e1fc92109f064e7c14375a548b3ad4c8e00c64c0/deploy-ip.sh | bash
 export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 export DSSC_HOST="smartcheck-${DSSC_HOST_IP//./-}.nip.io"
 ```

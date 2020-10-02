@@ -367,15 +367,7 @@ Finally, run
 
 ```shell
 export DNS_NAME="*.${AWS_REGION}.elb.amazonaws.com" && \
-  curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-smart-check/deploy-dns.sh | bash
-export DSSC_HOST=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-```
-
-or
-
-```shell
-export DNS_NAME="*.${AWS_REGION}.elb.amazonaws.com" && \
-  curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-dns.sh | bash
+  curl -sSL https://gist.githubusercontent.com/mawinkler/68391667fdfe98d9294417f3a24d337b/raw/5fc75c16b88bbca227db627bbbbaf4a60e237bc3/deploy-dns.sh | bash
 export DSSC_HOST=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 ```
 
