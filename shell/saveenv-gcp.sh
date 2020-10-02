@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "\
-export PROJECT=${PROJECT}
+export PROJECT_ID=${PROJECT_ID}
 export ZONE=${ZONE}
 export CLUSTER=${CLUSTER}
 export PROJECT_NUMBER=${PROJECT_NUMBER}
