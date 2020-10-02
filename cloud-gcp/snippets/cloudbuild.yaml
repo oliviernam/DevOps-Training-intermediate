@@ -8,7 +8,7 @@ steps:
     args:
       - '-c'
       - |
-          docker build -t gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} .
+          docker build -t gcr.io/${PROJECT_ID}/${IMAGE_NAME}:${IMAGE_TAG} .
 
 ### Publish
   - id: 'publish'
@@ -17,7 +17,7 @@ steps:
     args:
       - '-c'
       - |
-          docker push gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG}
+          docker push gcr.io/${PROJECT_ID}/${IMAGE_NAME}:${IMAGE_TAG}
 
 ### Scan
 
@@ -27,31 +27,19 @@ steps:
       - 'CLOUDONE_IMAGESECURITY_HOST=\${_CLOUDONE_IMAGESECURITY_HOST}'
       - 'CLOUDONE_IMAGESECURITY_USER=\${_CLOUDONE_IMAGESECURITY_USER}'
       - 'CLOUDONE_IMAGESECURITY_PASSWORD=\${_CLOUDONE_IMAGESECURITY_PASSWORD}'
-      # - 'CLOUDONE_PRESCAN_HOST=\${_CLOUDONE_PRESCAN_HOST}'
-      # - 'CLOUDONE_PRESCAN_USER=\${_CLOUDONE_PRESCAN_USER}'
-      # - 'CLOUDONE_PRESCAN_PASSWORD=\${_CLOUDONE_PRESCAN_PASSWORD}'
+      - 'CLOUDONE_IMAGESECURITY_PULL_AUTH=\${_CLOUDONE_IMAGESECURITY_PULL_AUTH}'
 
     entrypoint: 'bash'
     args:
       - '-c'
       - |
           docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.cache:/root/.cache/ deepsecurity/smartcheck-scan-action \
-            --image-name=gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} \
+            --image-name=gcr.io/${PROJECT_ID}/${IMAGE_NAME}:${IMAGE_TAG} \
             --smartcheck-host=\$\${CLOUDONE_IMAGESECURITY_HOST} \
             --smartcheck-user=\$\${CLOUDONE_IMAGESECURITY_USER} \
             --smartcheck-password=\$\${CLOUDONE_IMAGESECURITY_PASSWORD} \
+            --image-pull-auth=\$\${CLOUDONE_IMAGESECURITY_PULL_AUTH} \
             --findings-threshold='{"malware": 0, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 0 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
-
-          # docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.cache:/root/.cache/ deepsecurity/smartcheck-scan-action \
-          #   --preregistry-scan \
-          #   --preregistry-host=\$\${CLOUDONE_PRESCAN_HOST} \
-          #   --preregistry-user=\$\${CLOUDONE_PRESCAN_USER} \
-          #   --preregistry-password=\$\${CLOUDONE_PRESCAN_PASSWORD} \
-          #   --image-name=gcr.io/${PROJECT}/${IMAGE_NAME}:${IMAGE_TAG} \
-          #   --smartcheck-host=\$\${CLOUDONE_IMAGESECURITY_HOST} \
-          #   --smartcheck-user=\$\${CLOUDONE_IMAGESECURITY_USER} \
-          #   --smartcheck-password=\$\${CLOUDONE_IMAGESECURITY_PASSWORD} \
-          #   --findings-threshold='{"malware": 0, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 1 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
 
 ### Deploy
   - id: 'deploy'
@@ -71,7 +59,7 @@ steps:
           ZONE=\$\$(gcloud config get-value compute/zone)
 
           gcloud container clusters get-credentials "$\${CLUSTER}" \
-            --project "\$\${PROJECT}" \
+            --project "\$\${PROJECT_ID}" \
             --zone "\$\${ZONE}"  
 
           sed -i 's|gcr.io/PROJECT/IMAGE_NAME:IMAGE_TAG|gcr.io/$PROJECT/$IMAGE_NAME:$IMAGE_TAG|' ./app-gcp.yml
