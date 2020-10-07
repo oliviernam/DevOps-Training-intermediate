@@ -21,14 +21,14 @@ variables:
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
   
-  cloudOne_imageSecurityHost: smartcheck-51-105-203-36.nip.io
-  cloudOne_imageSecurityUser: administrator
-  cloudOne_imageSecurityPassword: trendmicro
-  cloudOne_preScanUser: administrator
-  cloudOne_preScanPassword: trendmicro
+  dsscHost: smartcheck-51-105-203-36.nip.io
+  dsscUser: administrator
+  dsscPassword: trendmicro
+  dsscBuildScanUser: administrator
+  dsscBuildScanPassword: trendmicro
 
-  cloudOne_applicationSecurityKey: 040beea0-3efc-4699-8c95-cadf21b01545
-  cloudOne_applicationSecuritySecret: 5d8b9064-caf4-4c59-8d56-ed01552ad854
+  applicationSecurityKey: 040beea0-3efc-4699-8c95-cadf21b01545
+  applicationSecuritySecret: 5d8b9064-caf4-4c59-8d56-ed01552ad854
 
 stages:
 - stage: Build
@@ -51,22 +51,22 @@ stages:
           
     # Scan the Container Image using Cloud One Container Security
     - script: |
-        openssl s_client -showcerts -connect $(cloudOne_imageSecurityHost):443 < /dev/null | \
-          sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > $(cloudOne_imageSecurityHost).crt
-        sudo cp $(cloudOne_imageSecurityHost).crt /usr/local/share/ca-certificates/$(cloudOne_imageSecurityHost).crt
-        sudo mkdir -p /etc/docker/certs.d/$(cloudOne_imageSecurityHost):5000
-        sudo cp $(cloudOne_imageSecurityHost).crt /etc/docker/certs.d/$(cloudOne_imageSecurityHost):5000/ca.crt
+        openssl s_client -showcerts -connect $(dsscHost):443 < /dev/null | \
+          sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > $(dsscHost).crt
+        sudo cp $(dsscHost).crt /usr/local/share/ca-certificates/$(dsscHost).crt
+        sudo mkdir -p /etc/docker/certs.d/$(dsscHost):5000
+        sudo cp $(dsscHost).crt /etc/docker/certs.d/$(dsscHost):5000/ca.crt
 
         sudo update-ca-certificates
 
         docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME:/root/.cache/ deepsecurity/smartcheck-scan-action \
         --preregistry-scan \
-        --preregistry-password=$(cloudOne_preScanPassword) \
-        --preregistry-user=$(cloudOne_preScanUser) \
+        --preregistry-password=$(dsscBuildScanPassword) \
+        --preregistry-user=$(dsscBuildScanUser) \
         --image-name=$(containerRegistry)/$(imageRepository):$(tag) \
-        --smartcheck-host=$(cloudOne_imageSecurityHost) \
-        --smartcheck-user=$(cloudOne_imageSecurityUser) \
-        --smartcheck-password=$(cloudOne_imageSecurityPassword) \
+        --smartcheck-host=$(dsscHost) \
+        --smartcheck-user=$(dsscUser) \
+        --smartcheck-password=$(dsscPassword) \
         --insecure-skip-tls-verify \
         --insecure-skip-registry-tls-verify \
         --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 30, "high": 10 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
@@ -108,8 +108,8 @@ stages:
 
           # Set Environment Variables for Cloud One Application Security
           - script: |
-              sed -i 's|_TREND_AP_KEY|$(cloudOne_applicationSecurityKey)|' $(Pipeline.Workspace)/manifests/deployment.yml
-              sed -i 's|_TREND_AP_SECRET|$(cloudOne_applicationSecuritySecret)|' $(Pipeline.Workspace)/manifests/deployment.yml
+              sed -i 's|_TREND_AP_KEY|$(applicationSecurityKey)|' $(Pipeline.Workspace)/manifests/deployment.yml
+              sed -i 's|_TREND_AP_SECRET|$(applicationSecuritySecret)|' $(Pipeline.Workspace)/manifests/deployment.yml
             displayName: "Configure Cloud One Application Security"
 
           - task: KubernetesManifest@0

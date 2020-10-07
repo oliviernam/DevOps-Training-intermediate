@@ -9,7 +9,7 @@
     - [Create a Container Registry](#create-a-container-registry)
     - [Create a Kubernetes Cluster](#create-a-kubernetes-cluster)
   - [Deploy Smart Check](#deploy-smart-check)
-  - [Configure CloudOne Application Security](#configure-cloudone-application-security)
+  - [Configure Cloud One Application Security](#configure-cloud-one-application-security)
   - [Build the Azure Pipeline](#build-the-azure-pipeline)
     - [Create a PAT](#create-a-pat)
     - [Create a project](#create-a-project)
@@ -36,7 +36,7 @@
 - An Azure DevOps organization. If you don't have one, you can create one for free <https://docs.microsoft.com/en-us/azure/devops/pipelines/get-started/pipelines-sign-up?view=azure-devops>. (An Azure DevOps organization is different from your GitHub organization. Give them the same name if you want alignment between them)
 - If your team already has one, then make sure you're an administrator of the Azure DevOps project that you want to use
 - An Azure account
-- A CloudOne Application Security Account
+- A Cloud One Application Security Account
 
 ## Connect to Azure
 
@@ -135,7 +135,7 @@ export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.
 export DSSC_HOST="smartcheck-${DSSC_HOST_IP//./-}.nip.io"
 ```
 
-## Configure CloudOne Application Security
+## Configure Cloud One Application Security
 
 Define the Application Security Key and Secret.
 
@@ -329,21 +329,21 @@ Define the following variables required for the scan action within the variables
 
 ```shell
 az pipelines variable create \
-  --name cloudOne_imageSecurityHost \
+  --name dsscHost \
   --pipeline-name ${APP_NAME} \
   --org ${DEVOPS_ORGANIZATION} \
   --project ${APP_NAME} \
   --value ${DSSC_HOST}
 
 az pipelines variable create \
-  --name cloudOne_imageSecurityUser \
+  --name dsscUser \
   --pipeline-name ${APP_NAME} \
   --org ${DEVOPS_ORGANIZATION} \
   --project ${APP_NAME} \
   --value ${DSSC_USERNAME}
 
 az pipelines variable create \
-  --name cloudOne_imageSecurityPassword \
+  --name dsscPassword \
   --pipeline-name ${APP_NAME} \
   --org ${DEVOPS_ORGANIZATION} \
   --project ${APP_NAME} \
@@ -351,14 +351,14 @@ az pipelines variable create \
   --secret true
 
 az pipelines variable create \
-  --name cloudOne_preScanUser \
+  --name dsscBuildScanUser \
   --pipeline-name ${APP_NAME} \
   --org ${DEVOPS_ORGANIZATION} \
   --project ${APP_NAME} \
   --value ${DSSC_REGUSER}
 
 az pipelines variable create \
-  --name cloudOne_preScanPassword \
+  --name dsscBuildScanPassword \
   --pipeline-name ${APP_NAME} \
   --org ${DEVOPS_ORGANIZATION} \
   --project ${APP_NAME} \
@@ -366,14 +366,14 @@ az pipelines variable create \
   --secret true
 
 az pipelines variable create \
-  --name cloudOne_applicationSecurityKey \
+  --name applicationSecurityKey \
   --pipeline-name ${APP_NAME} \
   --org ${DEVOPS_ORGANIZATION} \
   --project ${APP_NAME} \
   --value ${TREND_AP_KEY}
 
 az pipelines variable create \
-  --name cloudOne_applicationSecuritySecret \
+  --name applicationSecuritySecret \
   --pipeline-name ${APP_NAME} \
   --org ${DEVOPS_ORGANIZATION} \
   --project ${APP_NAME} \
@@ -430,22 +430,22 @@ First, within the `Build`stage, split the `buildAndPush`-task in two seperate bu
 
     # Scan the Container Image using Cloud One Container Security
     - script: |
-        openssl s_client -showcerts -connect $(cloudOne_imageSecurityHost):443 < /dev/null | \
-          sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > $(cloudOne_imageSecurityHost).crt
-        sudo cp $(cloudOne_imageSecurityHost).crt /usr/local/share/ca-certificates/$(cloudOne_imageSecurityHost).crt
-        sudo mkdir -p /etc/docker/certs.d/$(cloudOne_imageSecurityHost):5000
-        sudo cp $(cloudOne_imageSecurityHost).crt /etc/docker/certs.d/$(cloudOne_imageSecurityHost):5000/ca.crt
+        openssl s_client -showcerts -connect $(dsscHost):443 < /dev/null | \
+          sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > $(dsscHost).crt
+        sudo cp $(dsscHost).crt /usr/local/share/ca-certificates/$(dsscHost).crt
+        sudo mkdir -p /etc/docker/certs.d/$(dsscHost):5000
+        sudo cp $(dsscHost).crt /etc/docker/certs.d/$(dsscHost):5000/ca.crt
 
         sudo update-ca-certificates
 
         docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.cache/:/root/.cache/ deepsecurity/smartcheck-scan-action \
         --preregistry-scan \
-        --preregistry-password=$(cloudOne_preScanPassword) \
-        --preregistry-user=$(cloudOne_preScanUser) \
+        --preregistry-password=$(dsscBuildScanPassword) \
+        --preregistry-user=$(dsscBuildScanUser) \
         --image-name=$(containerRegistry)/$(imageRepository):$(tag) \
-        --smartcheck-host=$(cloudOne_imageSecurityHost) \
-        --smartcheck-user=$(cloudOne_imageSecurityUser) \
-        --smartcheck-password=$(cloudOne_imageSecurityPassword) \
+        --smartcheck-host=$(dsscHost) \
+        --smartcheck-user=$(dsscUser) \
+        --smartcheck-password=$(dsscPassword) \
         --insecure-skip-tls-verify \
         --insecure-skip-registry-tls-verify \
         --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 30, "high": 100 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
@@ -466,8 +466,8 @@ Second, within the `Deploy` stage, integrate Cloud One Application Security into
 
 ```yaml
           - script: |
-              sed -i 's|_TREND_AP_KEY|$(cloudOne_applicationSecurityKey)|' $(Pipeline.Workspace)/manifests/deployment.yml
-              sed -i 's|_TREND_AP_SECRET|$(cloudOne_applicationSecuritySecret)|' $(Pipeline.Workspace)/manifests/deployment.yml
+              sed -i 's|_TREND_AP_KEY|$(applicationSecurityKey)|' $(Pipeline.Workspace)/manifests/deployment.yml
+              sed -i 's|_TREND_AP_SECRET|$(applicationSecuritySecret)|' $(Pipeline.Workspace)/manifests/deployment.yml
             displayName: "Configure Cloud One Application Security"
 ```
 
@@ -478,7 +478,7 @@ If you now `commit` and `push` the pipeline should run successfully.
 And finally add all the files and folders recursively to the CodeCommit Repository.
 
 ```shell
-git commit . -m "cloudone integrated"
+git commit . -m "cloud one integrated"
 git push azure master
 ```
 
@@ -615,22 +615,22 @@ stages:
 
     # Scan the Container Image using Cloud One Container Security
     - script: |
-        openssl s_client -showcerts -connect $(cloudOne_imageSecurityHost):443 < /dev/null | \
-          sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > $(cloudOne_imageSecurityHost).crt
-        sudo cp $(cloudOne_imageSecurityHost).crt /usr/local/share/ca-certificates/$(cloudOne_imageSecurityHost).crt
-        sudo mkdir -p /etc/docker/certs.d/$(cloudOne_imageSecurityHost):5000
-        sudo cp $(cloudOne_imageSecurityHost).crt /etc/docker/certs.d/$(cloudOne_imageSecurityHost):5000/ca.crt
+        openssl s_client -showcerts -connect $(dsscHost):443 < /dev/null | \
+          sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > $(dsscHost).crt
+        sudo cp $(dsscHost).crt /usr/local/share/ca-certificates/$(dsscHost).crt
+        sudo mkdir -p /etc/docker/certs.d/$(dsscHost):5000
+        sudo cp $(dsscHost).crt /etc/docker/certs.d/$(dsscHost):5000/ca.crt
 
         sudo update-ca-certificates
 
         docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.cache/:/root/.cache/ deepsecurity/smartcheck-scan-action \
         --preregistry-scan \
-        --preregistry-password=$(cloudOne_preScanPassword) \
-        --preregistry-user=$(cloudOne_preScanUser) \
+        --preregistry-password=$(dsscBuildScanPassword) \
+        --preregistry-user=$(dsscBuildScanUser) \
         --image-name=$(containerRegistry)/$(imageRepository):$(tag) \
-        --smartcheck-host=$(cloudOne_imageSecurityHost) \
-        --smartcheck-user=$(cloudOne_imageSecurityUser) \
-        --smartcheck-password=$(cloudOne_imageSecurityPassword) \
+        --smartcheck-host=$(dsscHost) \
+        --smartcheck-user=$(dsscUser) \
+        --smartcheck-password=$(dsscPassword) \
         --insecure-skip-tls-verify \
         --insecure-skip-registry-tls-verify \
         --findings-threshold='{"malware": 200, "vulnerabilities": { "defcon1": 0, "critical": 30, "high": 100 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
@@ -672,8 +672,8 @@ stages:
 
           # Set Environment Variables for Cloud One Application Security
           - script: |
-              sed -i 's|_TREND_AP_KEY|$(cloudOne_applicationSecurityKey)|' $(Pipeline.Workspace)/manifests/deployment.yml
-              sed -i 's|_TREND_AP_SECRET|$(cloudOne_applicationSecuritySecret)|' $(Pipeline.Workspace)/manifests/deployment.yml
+              sed -i 's|_TREND_AP_KEY|$(applicationSecurityKey)|' $(Pipeline.Workspace)/manifests/deployment.yml
+              sed -i 's|_TREND_AP_SECRET|$(applicationSecuritySecret)|' $(Pipeline.Workspace)/manifests/deployment.yml
             displayName: "Configure Cloud One Application Security"
 
           - task: KubernetesManifest@0
