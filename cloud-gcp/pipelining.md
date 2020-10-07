@@ -480,9 +480,12 @@ Here, we set up a build trigger to watch for changes in the source code version 
 
 ```shell
 # Read service keyfile
-export DSSC_REG_GCR_JSON=$(cat ${GCR_SERVICE_ACCOUNT}_keyfile.json | jq tostring)
-export CLOUDONE_IMAGESECURITY_PULL_AUTH='{"username":"_json_token","password":'${DSSC_REG_GCR_JSON}'}'
+export JSON_KEY=$(cat service-gcrsvc_keyfile.json | jq tostring | sed -e 's/\\\"/\\\\\\"/g' | sed -e 's/^\"\(.*\)\"$/\1/')
 
+# Create pull authentication credentials
+export CLOUDONE_IMAGESECURITY_PULL_AUTH='{\"username\":\"_json_key\",\"password\":\"'${JSON_KEY}'\"}'
+
+# Build trigger
 cat <<EOF > build-trigger.json
 {
   "triggerTemplate": {
@@ -498,39 +501,6 @@ cat <<EOF > build-trigger.json
     "_CLOUDONE_IMAGESECURITY_USER": "${DSSC_USERNAME}",
     "_CLOUDONE_IMAGESECURITY_PASSWORD": "${DSSC_PASSWORD}",
     "_CLOUDONE_IMAGESECURITY_PULL_AUTH": "${CLOUDONE_IMAGESECURITY_PULL_AUTH}",
-    "_CLOUDONE_TREND_AP_KEY": \'${TREND_AP_KEY}\',
-    "_CLOUDONE_TREND_AP_SECRET": "${TREND_AP_SECRET}"
-  },
-  "filename": "cloudbuild.yaml"
-}
-EOF
-
-curl -X POST \
-    https://cloudbuild.googleapis.com/v1/projects/${PROJECT_ID}/triggers \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $(gcloud config config-helper --format='value(credential.access_token)')" \
-    --data-binary @build-trigger.json
-
-# ALTERNATIVE
-
-export DSSC_REG_GCR_JSON=$(cat ${GCR_SERVICE_ACCOUNT}_keyfile.json)
-export CLOUDONE_IMAGESECURITY_PULL_AUTH=$(echo '{"username":"_json_token","password":'${DSSC_REG_GCR_JSON}'}' | jq tostring)
-
-cat <<EOF > build-trigger.json
-{
-  "triggerTemplate": {
-    "projectId": "${PROJECT_ID}",
-    "repoName": "${IMAGE_NAME}",
-    "branchName": "master"
-  },
-  "description": "master",
-  "substitutions": {
-    "_CLOUDSDK_COMPUTE_ZONE": "${ZONE}",
-    "_CLOUDSDK_CONTAINER_CLUSTER": "${CLUSTER}",
-    "_CLOUDONE_IMAGESECURITY_HOST": "smartcheck-${DSSC_HOST//./-}.nip.io",
-    "_CLOUDONE_IMAGESECURITY_USER": "${DSSC_USERNAME}",
-    "_CLOUDONE_IMAGESECURITY_PASSWORD": "${DSSC_PASSWORD}",
-    "_CLOUDONE_IMAGESECURITY_PULL_AUTH": ${CLOUDONE_IMAGESECURITY_PULL_AUTH},
     "_CLOUDONE_TREND_AP_KEY": "${TREND_AP_KEY}",
     "_CLOUDONE_TREND_AP_SECRET": "${TREND_AP_SECRET}"
   },
@@ -538,6 +508,7 @@ cat <<EOF > build-trigger.json
 }
 EOF
 
+# Create the trigger
 curl -X POST \
     https://cloudbuild.googleapis.com/v1/projects/${PROJECT_ID}/triggers \
     -H "Content-Type: application/json" \
