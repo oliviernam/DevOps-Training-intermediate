@@ -460,11 +460,7 @@ Now we are going to create the AWS CodePipeline using AWS CloudFormation.
 Still in our source directory, download and review the stack definition. Just look, do not change anything now.
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-aws/snippets/${APP_NAME}-pipeline.cfn.yml --output ${APP_NAME}-pipeline.cfn.yml
-
-# or
-
-curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/${APP_NAME}-pipeline.cfn.yml --output ${APP_NAME}-pipeline.cfn.yml
+curl -sSL https://gist.githubusercontent.com/mawinkler/8f208b2fc73209bc99013f60dcc81679/raw/1f3c9a99595d1f4d0d3ddea5afa55df00e00dbe5/${APP_NAME}-pipeline.cfn.yml --output ${APP_NAME}-pipeline.cfn.yml
 ```
 
 You will realize a couple of chapters. First are the `Parameters` for the pipeline, which you can either leave with the defaults or customize.
@@ -509,11 +505,7 @@ aws cloudformation deploy --stack-name ${APP_NAME}-pipeline --template-file ${AP
 Download and review the buildspec.yml, this is the effective definition of the pipeline.
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-aws/snippets/buildspec.yml --output buildspec.yml
-
-# or
-
-curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/buildspec.yml --output buildspec.yml
+curl -sSL https://gist.githubusercontent.com/mawinkler/f7d271ea2b821cfd29b53d6c950cac8a/raw/a69dc68bacb28bde6b77a0068f91469f386a0fce/buildspec.yml --output buildspec.yml
 ```
 
 Review the build specification and identify what's happening in the different phases.
@@ -525,11 +517,7 @@ Can you identify the environment in which the different phases are executed?
 Download and review the app-eks.yml, this is the deployment manifest for kubernetes.
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-aws/snippets/app-eks.yml --output app-eks.yml
-
-# or
-
-curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/app-eks.yml --output app-eks.yml
+curl -sSL https://gist.githubusercontent.com/mawinkler/f553ada2dd083558befd484eeb7c8845/raw/0b4d6ad8671d61fb2fb36ec73f22fc2bcd376694/app-eks.yml --output app-eks.yml
 ```
 
 Review the deployment manifest. What are going to apply to our cluster?
