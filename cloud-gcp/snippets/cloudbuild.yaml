@@ -24,10 +24,10 @@ steps:
   - id: 'scan'
     name: 'gcr.io/cloud-builders/docker'
     env:
-      - 'CLOUDONE_IMAGESECURITY_HOST=\${_CLOUDONE_IMAGESECURITY_HOST}'
-      - 'CLOUDONE_IMAGESECURITY_USER=\${_CLOUDONE_IMAGESECURITY_USER}'
-      - 'CLOUDONE_IMAGESECURITY_PASSWORD=\${_CLOUDONE_IMAGESECURITY_PASSWORD}'
-      - 'CLOUDONE_IMAGESECURITY_PULL_AUTH=\${_CLOUDONE_IMAGESECURITY_PULL_AUTH}'
+      - 'DSSC_HOST=\${_DSSC_HOST}'
+      - 'DSSC_USER=\${_DSSC_USER}'
+      - 'DSSC_PASSWORD=\${_DSSC_PASSWORD}'
+      - 'PULL_AUTH=\${_PULL_AUTH}'
 
     entrypoint: 'bash'
     args:
@@ -35,10 +35,10 @@ steps:
       - |
           docker run  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.cache:/root/.cache/ deepsecurity/smartcheck-scan-action \
             --image-name=gcr.io/${PROJECT_ID}/${IMAGE_NAME}:${IMAGE_TAG} \
-            --smartcheck-host=\$\${CLOUDONE_IMAGESECURITY_HOST} \
-            --smartcheck-user=\$\${CLOUDONE_IMAGESECURITY_USER} \
-            --smartcheck-password=\$\${CLOUDONE_IMAGESECURITY_PASSWORD} \
-            --image-pull-auth=\$\${CLOUDONE_IMAGESECURITY_PULL_AUTH} \
+            --smartcheck-host=\$\${DSSC_HOST} \
+            --smartcheck-user=\$\${DSSC_USER} \
+            --smartcheck-password=\$\${DSSC_PASSWORD} \
+            --image-pull-auth=\$\${PULL_AUTH} \
             --findings-threshold='{"malware": 0, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 0 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
 
 ### Deploy

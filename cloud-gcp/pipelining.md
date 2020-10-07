@@ -483,7 +483,7 @@ Here, we set up a build trigger to watch for changes in the source code version 
 export JSON_KEY=$(cat service-gcrsvc_keyfile.json | jq tostring | sed -e 's/\\\"/\\\\\\"/g' | sed -e 's/^\"\(.*\)\"$/\1/')
 
 # Create pull authentication credentials
-export CLOUDONE_IMAGESECURITY_PULL_AUTH='{\"username\":\"_json_key\",\"password\":\"'${JSON_KEY}'\"}'
+export PULL_AUTH='{\"username\":\"_json_key\",\"password\":\"'${JSON_KEY}'\"}'
 
 # Build trigger
 cat <<EOF > build-trigger.json
@@ -497,10 +497,10 @@ cat <<EOF > build-trigger.json
   "substitutions": {
     "_CLOUDSDK_COMPUTE_ZONE": "${ZONE}",
     "_CLOUDSDK_CONTAINER_CLUSTER": "${CLUSTER}",
-    "_CLOUDONE_IMAGESECURITY_HOST": "smartcheck-${DSSC_HOST//./-}.nip.io",
-    "_CLOUDONE_IMAGESECURITY_USER": "${DSSC_USERNAME}",
-    "_CLOUDONE_IMAGESECURITY_PASSWORD": "${DSSC_PASSWORD}",
-    "_CLOUDONE_IMAGESECURITY_PULL_AUTH": "${CLOUDONE_IMAGESECURITY_PULL_AUTH}",
+    "_DSSC_HOST": "smartcheck-${DSSC_HOST//./-}.nip.io",
+    "_DSSC_USER": "${DSSC_USERNAME}",
+    "_DSSC_PASSWORD": "${DSSC_PASSWORD}",
+    "_PULL_AUTH": "${PULL_AUTH}",
     "_CLOUDONE_TREND_AP_KEY": "${TREND_AP_KEY}",
     "_CLOUDONE_TREND_AP_SECRET": "${TREND_AP_SECRET}"
   },
@@ -525,14 +525,10 @@ Lastly, we create the heart of the pipeline, the `cloudbuild.yaml`.
 Still in our source directory, download and review the pipeline definition. Just look, do not change anything now.
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloud-gcp/snippets/cloudbuild.yaml --output $cloudbuild.yaml
-
-# or
-
-curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/cloudbuild.yaml --output cloudbuild.yaml
+curl -sSL https://gist.githubusercontent.com/mawinkler/81f7f124e445c7f34d06b2d84b0ae81a/raw/3327c96c8dc3fbad14f96d66a7e1787fe3ac1918/cloudbuild.yaml --output cloudbuild.yaml
 ```
 
-Populate the paramentes.
+Populate the paramenters.
 
 ```shell
 eval "cat <<EOF
