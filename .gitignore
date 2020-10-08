@@ -5,4 +5,7 @@ cloud-gcp/link.md
 shell/workdir
 shell/.env
 shell/home.tgz
+shell-dind/workdir
+shell-dind/.env
+shell-dind/home.tgz
 cloud-gcp/triggerthings.md
