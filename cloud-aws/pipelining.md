@@ -6,9 +6,7 @@
     - [Install Kubernetes tools](#install-kubernetes-tools)
     - [Update IAM Settings for the Workspace](#update-iam-settings-for-the-workspace)
     - [Create an IAM Role for the Workspace](#create-an-iam-role-for-the-workspace)
-      - [UI-Path (for the chapter above)](#ui-path-for-the-chapter-above)
     - [Attach the IAM Role to the Workspace](#attach-the-iam-role-to-the-workspace)
-      - [UI-Path (for the chapter above)](#ui-path-for-the-chapter-above-1)
     - [Validate the IAM role](#validate-the-iam-role)
   - [Create an Elastic Kubernetes Services Cluster](#create-an-elastic-kubernetes-services-cluster)
     - [Create an SSH key for Worker Access](#create-an-ssh-key-for-worker-access)
@@ -129,6 +127,8 @@ export ROLE_NAME=ekscluster-admin
 export INSTANCE_PROFILE_NAME=${ROLE_NAME}
 ```
 
+Execute the following including the variable assignment:
+
 ```shell
 # Create the policy for EC2 access
 EC2_TRUST="{
@@ -149,16 +149,6 @@ aws iam attach-role-policy --role-name ${ROLE_NAME} --policy-arn "arn:aws:iam::a
 aws iam create-instance-profile --instance-profile-name ${INSTANCE_PROFILE_NAME}
 aws iam add-role-to-instance-profile --role-name ${ROLE_NAME} --instance-profile-name ${INSTANCE_PROFILE_NAME}
 ```
-
-#### UI-Path (for the chapter above)
-
-- Follow this deep link to create an IAM role with Administrator access.
-<https://console.aws.amazon.com/iam/home#/roles$new?step=review&commonUseCase=EC2%2BEC2&selectedUseCase=EC2&policies=arn:aws:iam::aws:policy%2FAdministratorAccess>
-
-- Confirm that AWS service and EC2 are selected, then click Next to view permissions.
-- Confirm that AdministratorAccess is checked, then click Next: Tags to assign tags.
-- Take the defaults, and click Next: Review to review.
-- Enter ekscluster-admin for the Name, and click Create role.
 
 ### Attach the IAM Role to the Workspace
 
@@ -183,14 +173,6 @@ INSTANCE_ID=<THE INSTANCE ID OF YOUR CLOUD9>
 # Attach the IAM role to an existing EC2 instance
 aws ec2 associate-iam-instance-profile --instance-id ${INSTANCE_ID} --iam-instance-profile Name=${INSTANCE_PROFILE_NAME}
 ```
-
-#### UI-Path (for the chapter above)
-
-- Follow this deep link to find your Cloud9 EC2 instance
-<https://console.aws.amazon.com/ec2/v2/home?#Instances:tag:Name=aws-cloud9-.*ekscluster.*;sort=desc:launchTime>
-
-- Select the instance, then choose Actions / Instance Settings / Attach/Replace IAM Rolec9instancerole
-- Choose ekscluster-admin from the IAM Role drop down, and select Apply
 
 ### Validate the IAM role
 
