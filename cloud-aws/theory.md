@@ -32,6 +32,7 @@
     - [ARN](#arn)
     - [KMS](#kms)
     - [t3.small etc.](#t3small-etc)
+    - [Deep Links](#deep-links)
 
 This document covers most of the technologies and AWS services used within the CI/CD Pipelining Lab on AWS. Lot's of links for more in depth information are given, whereby the potentially most relevant one is this: [AWS Documentation](https://docs.aws.amazon.com/index.html).
 
@@ -453,3 +454,8 @@ Besides t-type instances there are much more variants available: <https://aws.am
 See:
 - <https://aws.amazon.com/ec2/instance-types/t2/>
 - <https://aws.amazon.com/ec2/instance-types/t3/>
+
+### Deep Links
+
+An example for a deep link to an AWS service with a filter integrated:
+<https://console.aws.amazon.com/ec2/v2/home?#Instances:tag:Name=aws-cloud9-.*ekscluster.*;sort=desc:launchTime>
