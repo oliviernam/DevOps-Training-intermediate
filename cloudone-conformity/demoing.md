@@ -47,7 +47,7 @@ Important for demoing `CC`, **login to your AWS!**
 
 - **Dashboard --> Browse all checks**
   - High level overview what's surfaced on your accounts
-  - Typically by far to many findings, usually. So we need to limit and prioritize them.
+  - Typically by far too many findings, usually. So we need to limit and prioritize them.
   - Filter Settings you can use *(this might be different in your AWS account, so please adapt if necessary)*:
     - Services `S3`, `dynamodb`
       - only security
@@ -69,7 +69,7 @@ Important for demoing `CC`, **login to your AWS!**
 
 ## Rule Configuration
 
-  - **Dashboard --> Settings --> Configure now**
+  - **Dashboard --> Select Account --> Settings --> Configure now**
   ![alt text](images/04_rule_settings.png "Rule Settings")
     - Filter for `non-active rules`, and `Requires configuration check`
     - Search for `regions`
@@ -125,7 +125,7 @@ Important for demoing `CC`, **login to your AWS!**
 
 ## Real Time Monitoring
 
-  - **Dashboard --> Threat monitoring**
+  - **Dashboard --> Select Account --> Threat monitoring**
   ![alt text](images/10_threat_monitoring.png "Threat Monitoring")
   - Essentially it is a connection to `AWS CloudTrail` and `AWS CloudWatch`
   - `CC` is receiving a copy of the events
