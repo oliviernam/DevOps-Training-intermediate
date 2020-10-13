@@ -135,6 +135,7 @@ Make sure that the following APIs are enabled in the Google Cloud Console:
 - Cloud Build API
 - Cloud Source Repositories API
 - Compute API
+- Cloud Resource Manager API
 
 ```shell
 gcloud services enable \
