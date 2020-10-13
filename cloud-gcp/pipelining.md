@@ -22,9 +22,6 @@
   - [Appendix](#appendix)
     - [Enable persistence for the environment variables when using Multi Cloud Shell](#enable-persistence-for-the-environment-variables-when-using-multi-cloud-shell)
     - [Links](#links)
-    - [Ingress](#ingress)
-    - [Google-managed SSL certificate](#google-managed-ssl-certificate)
-    - [Cloud Builders](#cloud-builders)
     - [Manually trigger the pipeline](#manually-trigger-the-pipeline)
     - [Manually build and push](#manually-build-and-push)
     - [Delete a cluster](#delete-a-cluster)
@@ -588,28 +585,6 @@ Restore with
 - <https://cloud.google.com/kubernetes-engine/docs/concepts/ingress?authuser=1&hl=nl#health_checks>
 - <https://cloud.google.com/kubernetes-engine/docs/concepts/ingress#def_inf_hc>
 - <https://cloud.google.com/kubernetes-engine/docs/how-to/ingress-features#direct_health>
-
-### Ingress
-
-As per the official definition, Ingress is an *API object that manages external access to the services in a cluster, typically HTTP. Ingress can provide load balancing, SSL termination, and name-based virtual hosting*
-
-One of the main use cases of ingress is, it allows users to access Kubernetes services from outside the Kubernetes cluster.
-
-Ingress has 2 parts, ingress controller (there are many controllers) and ingress rules. We create ingress rules and we need a controller that satisfies and process those rules. Only applying ingress rules does not affect the cluster.
-
-### Google-managed SSL certificate
-
-Managed Certificate is a Custom Resource object created by google. This CRD allows users to automatically acquire an SSL certificate from a Certificate Authority, configure certificate on the load balancer and auto-renew it on time when it’s expired.
-
-The process is super simple and users only need to provide a domain for which they want to obtain a certificate.
-
-### Cloud Builders
-
-Cloud builders are container images with common languages and tools installed in them. You can configure Cloud Build to run a specific command within the context of these builders.
-
-This page describes the types of builders that you can use with Cloud Build.
-
-<https://cloud.google.com/cloud-build/docs/cloud-builders>
 
 ### Manually trigger the pipeline
 
