@@ -2,16 +2,16 @@
 
 - [CI/CD with AWS CodePipeline](#cicd-with-aws-codepipeline)
   - [Prerequisites](#prerequisites)
-  - [Create a Workspace](#create-a-workspace)
+  - [Create a Workspace - Cloud9](#create-a-workspace---cloud9)
     - [Install Kubernetes tools](#install-kubernetes-tools)
     - [Update IAM Settings for the Workspace](#update-iam-settings-for-the-workspace)
     - [Create an IAM Role for the Workspace](#create-an-iam-role-for-the-workspace)
     - [Attach the IAM Role to the Workspace](#attach-the-iam-role-to-the-workspace)
     - [Validate the IAM role](#validate-the-iam-role)
+  - [Create a Workspace - Multi Cloud Shell](#create-a-workspace---multi-cloud-shell)
   - [Create an Elastic Kubernetes Services Cluster](#create-an-elastic-kubernetes-services-cluster)
     - [Create an SSH key for Worker Access](#create-an-ssh-key-for-worker-access)
     - [Create an AWS KMS Custom Managed Key (CMK) for Secrets Encryption](#create-an-aws-kms-custom-managed-key-cmk-for-secrets-encryption)
-    - [Install EKS tools and Helm (if not using the Multi Cloud Shell)](#install-eks-tools-and-helm-if-not-using-the-multi-cloud-shell)
     - [Launch an EKS cluster](#launch-an-eks-cluster)
   - [Deploy Smart Check](#deploy-smart-check)
   - [CI/CD with CodePipeline](#cicd-with-codepipeline)
@@ -24,6 +24,7 @@
     - [Create Kubernetes Deployment and Service Definition](#create-kubernetes-deployment-and-service-definition)
   - [Appendix](#appendix)
     - [Enable persistence for the environment variables when using Multi Cloud Shell](#enable-persistence-for-the-environment-variables-when-using-multi-cloud-shell)
+    - [Clean-Up your Environment](#clean-up-your-environment)
     - [Delete an EKS Cluster](#delete-an-eks-cluster)
     - [hash -r](#hash--r)
 
@@ -33,7 +34,9 @@
 - An AWS account
 - A CloudOne Application Security Account
 
-## Create a Workspace
+**To run through the lab, you can choose to do it within a Cloud9 environment on AWS or using (the kind of experimental) `Multi Cloud Shell`. So either continue with the next chapter or jump to [Create a Workspace - Multi Cloud Shell](#create-a-workspace---multi-cloud-shell)**
+
+## Create a Workspace - Cloud9
 
 - Select Create Cloud9 environment
 - Name it somehow like `ekscluster` (at least have the word ekscluster within the name)
@@ -44,26 +47,28 @@
 
 ### Install Kubernetes tools
 
-```shell
+We start with kubectl and awscli
+
+```sh
 sudo curl --silent --location -o /usr/local/bin/kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.15.10/2020-02-22/bin/linux/amd64/kubectl
 sudo chmod +x /usr/local/bin/kubectl
 ```
 
 Update awscli
 
-```shell
+```sh
 sudo pip install --upgrade awscli && hash -r
 ```
 
 Install jq, envsubst (from GNU gettext utilities) and bash-completion
 
-```shell
+```sh
 sudo yum -y install jq gettext bash-completion
 ```
 
 Verify the binaries are in the path and executable
 
-```shell
+```sh
 for command in kubectl jq envsubst aws
   do
     which $command &>/dev/null && echo "$command in path" || echo "$command NOT FOUND"
@@ -72,10 +77,46 @@ for command in kubectl jq envsubst aws
 
 Enable kubectl bash_completion
 
-```shell
+```sh
 kubectl completion bash >>  ~/.bash_completion
 . /etc/profile.d/bash_completion.sh
 . ~/.bash_completion
+```
+
+Now, we need to download the eksctl binary:
+
+```sh
+curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+
+sudo mv -v /tmp/eksctl /usr/local/bin
+```
+
+Confirm the eksctl command works:
+
+```sh
+eksctl version
+```
+
+Enable eksctl bash-completion
+
+```sh
+eksctl completion bash >> ~/.bash_completion
+. /etc/profile.d/bash_completion.sh
+. ~/.bash_completion
+```
+
+Finally, we need to install Helm:
+
+```sh
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+chmod +x get_helm.sh
+./get_helm.sh
+```
+
+And confirm that helm works:
+
+```sh
+helm version
 ```
 
 ### Update IAM Settings for the Workspace
@@ -87,31 +128,31 @@ kubectl completion bash >>  ~/.bash_completion
 
 We should configure our aws cli with our aws credentials and current region as default.
 
-```shell
+```sh
 aws configure
 ```
 
-```shell
+```sh
 AWS Access Key ID [****************....]: <KEY>
 AWS Secret Access Key [****************....]: <SECRET>
 Default region name [eu-central-1]: 
 Default output format [None]: json
 ```
 
-```shell
+```sh
 export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
 export AWS_REGION=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
 ```
 
 Check if AWS_REGION is set to desired region
 
-```shell
+```sh
 test -n "$AWS_REGION" && echo AWS_REGION is "$AWS_REGION" || echo AWS_REGION is not set
 ```
 
 Let’s save these into bash_profile
 
-```shell
+```sh
 echo "export ACCOUNT_ID=${ACCOUNT_ID}" | tee -a ~/.bash_profile
 echo "export AWS_REGION=${AWS_REGION}" | tee -a ~/.bash_profile
 aws configure set default.region ${AWS_REGION}
@@ -122,14 +163,14 @@ aws configure get default.region
 
 Next, we define some names:
 
-```shell
+```sh
 export ROLE_NAME=ekscluster-admin
 export INSTANCE_PROFILE_NAME=${ROLE_NAME}
 ```
 
 Execute the following including the variable assignment:
 
-```shell
+```sh
 # Create the policy for EC2 access
 EC2_TRUST="{
   \"Version\": \"2012-10-17\",
@@ -154,7 +195,7 @@ aws iam add-role-to-instance-profile --role-name ${ROLE_NAME} --instance-profile
 
 Which the following commands, we grant our Cloud9 instance the priviliges to manage an EKS cluster.
 
-```shell
+```sh
 # Query the instance ID of our Cloud9 environment
 INSTANCE_ID=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=*ekscluster*' --query 'Reservations[*].Instances[*].{Instance:InstanceId}' | jq -r '.[0][0].Instance')
 
@@ -166,7 +207,7 @@ If you run in an error here like `An error occurred (IncorrectInstanceState) whe
 
 To solve this problem, check the instance ID of your active Cloud9 instance in EC2 and assign it manually to the variable INSTANCE_ID. Then attach the role to the instance.
 
-```shell
+```sh
 # Query the instance ID of our Cloud9 environment
 INSTANCE_ID=<THE INSTANCE ID OF YOUR CLOUD9>
 
@@ -178,24 +219,46 @@ aws ec2 associate-iam-instance-profile --instance-id ${INSTANCE_ID} --iam-instan
 
 To ensure temporary credentials aren’t already in place we will also remove any existing credentials file:
 
-```shell
+```sh
 rm -vf ${HOME}/.aws/credentials
 ```
 
 Use the GetCallerIdentity CLI command to validate that the Cloud9 IDE is using the correct IAM role.
 
-```shell
+```sh
 aws sts get-caller-identity --query Arn | grep ekscluster-admin -q && echo "IAM role valid" || echo "IAM role NOT valid"
 ```
 
 Note: A single `aws sts get-caller-identity --query Arn` should return something similar to this:
 
-```shell
+```sh
 {
     "Account": "123456789012",
     "UserId": "AROA1SAMPLEAWSIAMROLE:i-01234567890abcdef",
     "Arn": "arn:aws:sts::123456789012:assumed-role/ekscluster-admin/i-01234567890abcdef"
 }
+```
+
+**Now, your workspace on Cloud9 should be functional. To continue [Create an Elastic Kubernetes Services Cluster](#create-an-elastic-kubernetes-services-cluster)**
+
+## Create a Workspace - Multi Cloud Shell
+
+We should configure our aws cli with our aws credentials and current region as default.
+
+```sh
+aws configure
+```
+
+```sh
+AWS Access Key ID [****************....]: <KEY>
+AWS Secret Access Key [****************....]: <SECRET>
+Default region name [eu-central-1]: 
+Default output format [None]: json
+```
+
+```sh
+export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
+export AWS_REGION=$(cat ~/.aws/config | sed -n 's/^region\s=\s\(.*\)/\1/p')
 ```
 
 ## Create an Elastic Kubernetes Services Cluster
@@ -204,34 +267,28 @@ Note: A single `aws sts get-caller-identity --query Arn` should return something
 
 Please run this command to generate SSH Key in Cloud9. This key will be used on the worker node instances to allow ssh access if necessary.
 
-```shell
+```sh
 ssh-keygen -q -f ~/.ssh/id_rsa -P ""
 ```
 
 Upload the public key to your EC2 region:
 
-```shell
+```sh
 aws ec2 import-key-pair --key-name "ekscluster" --public-key-material file://~/.ssh/id_rsa.pub
-```
-
-If you got an error similar to An error occurred (InvalidKey.Format) when calling the ImportKeyPair operation: Key is not in valid OpenSSH public key format then you can try this command instead:
-
-```shell
-aws ec2 import-key-pair --key-name "ekscluster" --public-key-material fileb://~/.ssh/id_rsa.pub
 ```
 
 ### Create an AWS KMS Custom Managed Key (CMK) for Secrets Encryption
 
 Create a CMK for the EKS cluster to use when encrypting your Kubernetes secrets:
 
-```shell
+```sh
 KEY_ALIAS_NAME="alias/ekscluster"
 aws kms create-alias --alias-name ${KEY_ALIAS_NAME} --target-key-id $(aws kms create-key --query KeyMetadata.Arn --output text)
 ```
 
 Let’s retrieve the ARN of the CMK to input into the create cluster command.
 
-```shell
+```sh
 export MASTER_ARN=$(aws kms describe-key --key-id ${KEY_ALIAS_NAME} --query KeyMetadata.Arn --output text)
 ```
 
@@ -239,53 +296,15 @@ We set the MASTER_ARN environment variable to make it easier to refer to the KMS
 
 Now, let’s save the MASTER_ARN environment variable into the bash_profile
 
-```shell
+```sh
 echo "export MASTER_ARN=${MASTER_ARN}" | tee -a ~/.bash_profile
-```
-
-### Install EKS tools and Helm (if not using the Multi Cloud Shell)
-
-For this module, we need to download the eksctl binary:
-
-```shell
-curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
-
-sudo mv -v /tmp/eksctl /usr/local/bin
-```
-
-Confirm the eksctl command works:
-
-```shell
-eksctl version
-```
-
-Enable eksctl bash-completion
-
-```shell
-eksctl completion bash >> ~/.bash_completion
-. /etc/profile.d/bash_completion.sh
-. ~/.bash_completion
-```
-
-Finally, we need to install Helm:
-
-```shell
-curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
-chmod +x get_helm.sh
-./get_helm.sh
-```
-
-And confirm that helm works:
-
-```shell
-helm version
 ```
 
 ### Launch an EKS cluster
 
 Create an eksctl deployment file (ekscluster.yaml) use in creating your cluster using the following syntax:
 
-```shell
+```sh
 export CLUSTER_NAME=ekscluster-eksctl
 
 cat << EOF > ekscluster.yaml
@@ -311,17 +330,17 @@ EOF
 
 Next, use the file you created as the input for the eksctl cluster creation.
 
-```shell
+```sh
 eksctl create cluster -f ekscluster.yaml
 ```
 
 Confirm your nodes:
 
-```shell
+```sh
 kubectl get nodes # if we see our 3 nodes, we know we have authenticated correctly
 ```
 
-```shell
+```sh
 ip-192-168-30-233.eu-central-1.compute.internal   Ready    <none>   3m39s   v1.17.9-eks-4c6976
 ip-192-168-56-29.eu-central-1.compute.internal    Ready    <none>   3m46s   v1.17.9-eks-4c6976
 ip-192-168-66-142.eu-central-1.compute.internal   Ready    <none>   3m45s   v1.17.9-eks-4c6976
@@ -331,7 +350,7 @@ ip-192-168-66-142.eu-central-1.compute.internal   Ready    <none>   3m45s   v1.1
 
 Define some variables
 
-```shell
+```sh
 export DSSC_NAMESPACE='smartcheck'
 export DSSC_USERNAME='administrator'
 export DSSC_PASSWORD='trendmicro'
@@ -341,15 +360,15 @@ export DSSC_REGPASSWORD='trendmicro'
 
 Set the activation code for Smart Check
 
-```shell
+```sh
 export DSSC_AC=<SMART CHECK ACTIVATION CODE>
 ```
 
 Finally, run
 
-```shell
+```sh
 export DNS_NAME="*.${AWS_REGION}.elb.amazonaws.com" && \
-  curl -sSL https://gist.githubusercontent.com/mawinkler/68391667fdfe98d9294417f3a24d337b/raw/5fc75c16b88bbca227db627bbbbaf4a60e237bc3/deploy-dns.sh | bash
+  curl -sSL https://gist.githubusercontent.com/mawinkler/68391667fdfe98d9294417f3a24d337b/raw/ff5e8f929da4b5f9512288ac61d63a4ca34614d4/deploy-dns.sh | bash
 export DSSC_HOST=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 ```
 
@@ -363,7 +382,7 @@ In this step, we are going to create an IAM role and add an inline policy that w
 
 Create the role:
 
-```shell
+```sh
 export CODEBUILD_ROLE_NAME=ekscluster-codebuild
 TRUST="{
   \"Version\": \"2012-10-17\",
@@ -396,7 +415,7 @@ Now that we have the IAM role created, we are going to add the role to the aws-a
 
 Once the ConfigMap includes this new role, kubectl in the CodeBuild stage of the pipeline will be able to interact with the EKS cluster via the IAM role.
 
-```shell
+```sh
 ROLE="    - rolearn: arn:aws:iam::${ACCOUNT_ID}:role/${CODEBUILD_ROLE_NAME}\n      username: build\n      groups:\n        - system:masters"
 kubectl get -n kube-system configmap/aws-auth -o yaml | awk "/mapRoles: \|/{print;print \"$ROLE\";next}1" > /tmp/aws-auth-patch.yml
 kubectl patch configmap/aws-auth -n kube-system --patch "$(cat /tmp/aws-auth-patch.yml)"
@@ -418,19 +437,20 @@ Git associates a remote URL with a name, and your default remote is usually call
 
 Here, we're adding a remote repository in AWS CodeCommit which our pipeline will use.
 
-```shell
+```sh
+export GITHUB_USERNAME="[YOUR GITHUB USERNAME]"
 export APP_NAME=c1-app-sec-uploader
-git clone https://github.com/<YOUR GITHUB HANDLE>/${APP_NAME}.git
+git clone https://github.com/${GITHUB_USERNAME}/${APP_NAME}.git
 cd ${APP_NAME}
 git init
 git remote add aws https://git-codecommit.${AWS_REGION}.amazonaws.com/v1/repos/${APP_NAME}
 ```
 
-Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your Git username.
+Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your name.
 
-```shell
+```sh
 git config --global user.email "[EMAIL_ADDRESS]"
-git config --global user.name "[USERNAME]"
+git config --global user.name "Jane Doe"
 ```
 
 ### CodePipeline Setup
@@ -441,7 +461,7 @@ Now we are going to create the AWS CodePipeline using AWS CloudFormation.
 
 Still in our source directory, download and review the stack definition. Just look, do not change anything now.
 
-```shell
+```sh
 curl -sSL https://gist.githubusercontent.com/mawinkler/8f208b2fc73209bc99013f60dcc81679/raw/1f3c9a99595d1f4d0d3ddea5afa55df00e00dbe5/${APP_NAME}-pipeline.cfn.yml --output ${APP_NAME}-pipeline.cfn.yml
 ```
 
@@ -451,16 +471,17 @@ The more interesting part is the `Resources` chapter, which defines all used res
 
 Ok, now let's populate the paramenters, but set your Application Security credentials first:
 
-```shell
+```sh
 export TREND_AP_KEY=<YOUR CLOUD ONE APPLICATION SECURITY KEY>
 export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET>
 ```
 
 Do the parameter expansion.
 
-```shell
+```sh
 export DSSC_HOST=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 export CLUSTER_NAME=$(eksctl get cluster -o json | jq -r '.[].name')
+export CODEBUILD_ROLE_NAME=ekscluster-codebuild
 export IMAGE_NAME=${APP_NAME}
 export IMAGE_TAG=latest
 
@@ -472,13 +493,13 @@ EOF
 
 Validate the stack
 
-```shell
+```sh
 aws cloudformation validate-template --template-body file://${APP_NAME}-pipeline.cfn.yml
 ```
 
 If you get a nice JSON, create the stack
 
-```shell
+```sh
 aws cloudformation deploy --stack-name ${APP_NAME}-pipeline --template-file ${APP_NAME}-pipeline.cfn.yml --capabilities CAPABILITY_IAM
 ```
 
@@ -486,8 +507,8 @@ aws cloudformation deploy --stack-name ${APP_NAME}-pipeline --template-file ${AP
 
 Download and review the buildspec.yml, this is the effective definition of the pipeline.
 
-```shell
-curl -sSL https://gist.githubusercontent.com/mawinkler/f7d271ea2b821cfd29b53d6c950cac8a/raw/a69dc68bacb28bde6b77a0068f91469f386a0fce/buildspec.yml --output buildspec.yml
+```sh
+curl -sSL https://gist.githubusercontent.com/mawinkler/f7d271ea2b821cfd29b53d6c950cac8a/raw/72687ea4a55c4880e0423086bf29221154cdd381/buildspec.yml --output buildspec.yml
 ```
 
 Review the build specification and identify what's happening in the different phases.
@@ -498,7 +519,7 @@ Can you identify the environment in which the different phases are executed?
 
 Download and review the app-eks.yml, this is the deployment manifest for kubernetes.
 
-```shell
+```sh
 curl -sSL https://gist.githubusercontent.com/mawinkler/f553ada2dd083558befd484eeb7c8845/raw/0b4d6ad8671d61fb2fb36ec73f22fc2bcd376694/app-eks.yml --output app-eks.yml
 ```
 
@@ -506,7 +527,7 @@ Review the deployment manifest. What are going to apply to our cluster?
 
 Then, do the parameter expansion.
 
-```shell
+```sh
 eval "cat <<EOF
 $(<app-eks.yml)
 EOF
@@ -515,7 +536,7 @@ EOF
 
 And finally add all the files and folders recursively to the CodeCommit Repository.
 
-```shell
+```sh
 git add .
 git commit -m "Initial commit"
 git push aws master
@@ -527,7 +548,7 @@ Whenever you change something in the CodeCommit repo, the pipeline will rerun.
 
 If the pipeline did sucessfully finish, you can retrieve the URL for our music uploader with the following command:
 
-```shell
+```sh
 kubectl get svc -n default ${APP_NAME} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
 
@@ -539,7 +560,7 @@ Done. So, let's upload some music files :-)
 
 To make the defined environment variables persistent run
 
-```shell
+```sh
 ~/saveenv-aws.sh
 ```
 
@@ -547,21 +568,41 @@ before you shut down the container.
 
 Restore with
 
-```shell
+```sh
 . ~/.aws-lab.sh
+```
+
+### Clean-Up your Environment
+
+Execute the following to remove the lab resources
+
+```sh
+kubectl delete svc ${APP_NAME}
+helm -n ${DSSC_NAMESPACE} delete deepsecurity-smartcheck
+
+eksctl delete cluster --name `eksctl get cluster -o json | jq -r '.[].name'`
+
+aws ec2 delete-key-pair --key-name "ekscluster"
+aws kms delete-alias --alias-name ${KEY_ALIAS_NAME}
+
+export CODEBUILD_ROLE_NAME=ekscluster-codebuild
+aws iam delete-role-policy --role-name ${CODEBUILD_ROLE_NAME} --policy-name eks-describe
+aws iam delete-role --role-name ${CODEBUILD_ROLE_NAME}
+
+aws cloudformation delete-stack --stack-name ${APP_NAME}-pipeline
 ```
 
 ### Delete an EKS Cluster
 
 List all services running in your cluster.
 
-```shell
+```sh
 kubectl get svc --all-namespaces
 ```
 
 Delete any services that have an associated EXTERNAL-IP value. These services are fronted by an Elastic Load Balancing load balancer, and you must delete them in Kubernetes to allow the load balancer and associated resources to be properly released.
 
-```shell
+```sh
 kubectl delete svc service-name
 ```
 
@@ -569,7 +610,7 @@ Now
 
 Delete the cluster and its associated worker nodes.
 
-```shell
+```sh
 eksctl delete cluster --name `eksctl get cluster -o json | jq -r '.[].name'`
 ```
 
