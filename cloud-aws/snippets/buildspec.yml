@@ -40,7 +40,7 @@ phases:
         deepsecurity/smartcheck-scan-action
         --image-name "$REPOSITORY_URI:$TAG"
         --findings-threshold "{\"malware\":0,\"vulnerabilities\":{\"defcon1\":0,\"critical\":30,\"high\":100},\"contents\":{\"defcon1\":0,\"critical\":1,\"high\":1},\"checklists\":{\"defcon1\":0,\"critical\":0,\"high\":0}}"
-        --preregistry-host="$PRE_SCAN_REPOSITORY"
+        --preregistry-host="$PRE_SCAN_REPOSITORY:5000"
         --smartcheck-host="$SMARTCHECK_HOST"
         --smartcheck-user="$SMARTCHECK_USER"
         --smartcheck-password="$SMARTCHECK_PWD"
