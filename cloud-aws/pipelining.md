@@ -534,6 +534,13 @@ EOF
 " 2> /dev/null > app-eks.yml
 ```
 
+Enable the credential helper for git to modify `~/.gitconfig`.
+
+```sh
+git config --global credential.helper '!aws codecommit credential-helper $@'
+git config --global credential.UseHttpPath true
+```
+
 And finally add all the files and folders recursively to the CodeCommit Repository.
 
 ```sh
@@ -588,6 +595,8 @@ aws kms delete-alias --alias-name ${KEY_ALIAS_NAME}
 export CODEBUILD_ROLE_NAME=ekscluster-codebuild
 aws iam delete-role-policy --role-name ${CODEBUILD_ROLE_NAME} --policy-name eks-describe
 aws iam delete-role --role-name ${CODEBUILD_ROLE_NAME}
+
+aws ecr delete-repository --repository-name ${APP_NAME} --force
 
 aws cloudformation delete-stack --stack-name ${APP_NAME}-pipeline
 ```
