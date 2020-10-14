@@ -121,7 +121,7 @@ ACCOUNT_ID            NAME                 OPEN  MASTER_ACCOUNT_ID
 We now link that billing account to our project.
 
 ```shell
-gcloud alpha billing projects link ${PROJECT_id} \
+gcloud alpha billing projects link ${PROJECT_ID} \
   --billing-account 019XXX-6XXXX9-4XXXX1
 ```
 
@@ -182,7 +182,7 @@ gcloud iam service-accounts create ${GCR_SERVICE_ACCOUNT}
 
 gcloud projects add-iam-policy-binding ${PROJECT_ID} --member "serviceAccount:${GCR_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com" --role "roles/storage.admin"
 
-gcloud iam service-accounts keys create ${GCR_SERVICE_ACCOUNT}_keyfile.json --iam-account ${GCR_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
+gcloud iam service-accounts keys create ~/${GCR_SERVICE_ACCOUNT}_keyfile.json --iam-account ${GCR_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
 ```
 
 Your environment is ready!
@@ -339,7 +339,7 @@ Next, we add the Google Container Registry to Smart Check.
 export DSSC_BEARERTOKEN=$(curl -s -k -X POST https://${DSSC_HOST}/api/sessions -H "Content-Type: application/json"  -H "Api-Version: 2018-05-01" -H "cache-control: no-cache" -d "{\"user\":{\"userid\":\"${DSSC_USERNAME}\",\"password\":\"${DSSC_PASSWORD}\"}}" | jq '.token' | tr -d '"')
 
 # Read service keyfile
-export DSSC_REG_GCR_JSON=$(cat ${GCR_SERVICE_ACCOUNT}_keyfile.json | jq tostring)
+export DSSC_REG_GCR_JSON=$(cat ~/${GCR_SERVICE_ACCOUNT}_keyfile.json | jq tostring)
 
 # Set filter
 export DSSC_FILTER='*'
@@ -478,7 +478,7 @@ Here, we set up a build trigger to watch for changes in the source code version 
 
 ```shell
 # Read service keyfile
-export JSON_KEY=$(cat service-gcrsvc_keyfile.json | jq tostring | sed -e 's/\\\"/\\\\\\"/g' | sed -e 's/^\"\(.*\)\"$/\1/')
+export JSON_KEY=$(cat ~/service-gcrsvc_keyfile.json | jq tostring | sed -e 's/\\\"/\\\\\\"/g' | sed -e 's/^\"\(.*\)\"$/\1/')
 
 # Create pull authentication credentials
 export PULL_AUTH='{\"username\":\"_json_key\",\"password\":\"'${JSON_KEY}'\"}'
@@ -523,7 +523,7 @@ Lastly, we create the heart of the pipeline, the `cloudbuild.yaml`.
 Still in our source directory, download and review the pipeline definition. Just look, do not change anything now.
 
 ```shell
-curl -sSL https://gist.githubusercontent.com/mawinkler/81f7f124e445c7f34d06b2d84b0ae81a/raw/3327c96c8dc3fbad14f96d66a7e1787fe3ac1918/cloudbuild.yaml --output cloudbuild.yaml
+curl -sSL https://gist.githubusercontent.com/mawinkler/81f7f124e445c7f34d06b2d84b0ae81a/raw/958dec526842dbafe17bcf60ac23213f730c38cb/cloudbuild.yaml --output cloudbuild.yaml
 ```
 
 Populate the paramenters.
