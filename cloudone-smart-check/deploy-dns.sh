@@ -2,13 +2,13 @@
 
 set -e
 
-printf '%s' "Configure Cloud One Image Security namespace"
+printf '%s' "Configure Cloud One Smart Check namespace"
 
 kubectl create namespace ${DSSC_NAMESPACE} --dry-run=true -o yaml | kubectl apply -f - > /dev/null
 
 printf ' - %s\n' "configured"
 
-printf '%s' "Configure Image Security overrides"
+printf '%s' "Configure Smart Check overrides"
 
 DSSC_TEMPPW='justatemppw'
 cat <<EOF >./overrides-image-security.yml
@@ -68,7 +68,7 @@ printf ' - %s\n' "configured"
 
 if [ "$(helm --namespace ${DSSC_NAMESPACE} list -q | grep deep)" != "" ] ;
   then
-    printf '%s' "Upgrading Cloud One Image Security"
+    printf '%s' "Upgrading Cloud One Smart Check"
     helm upgrade --namespace ${DSSC_NAMESPACE} \
       --values overrides-image-security.yml \
       deepsecurity-smartcheck \
@@ -76,7 +76,7 @@ if [ "$(helm --namespace ${DSSC_NAMESPACE} list -q | grep deep)" != "" ] ;
       --reuse-values > /dev/null
     printf ' - %s\n' "upgraded"
   else
-    printf '%s' "Installing Cloud One Image Security"
+    printf '%s' "Installing Cloud One Smart Check"
     helm install --namespace ${DSSC_NAMESPACE} \
       --values overrides-image-security.yml \
       deepsecurity-smartcheck \
@@ -84,7 +84,7 @@ if [ "$(helm --namespace ${DSSC_NAMESPACE} list -q | grep deep)" != "" ] ;
     printf ' - %s\n' "installed"
 fi
 
-printf '%s' "Waiting for Cloud One Image Security to be in active state"
+printf '%s' "Waiting for Cloud One Smart Check to be in active state"
 
 SMARTCHECK_DEPLOYMENTS=$(kubectl -n smartcheck get deployments | grep -c "/")
 
@@ -96,7 +96,7 @@ done
 
 printf ' - %s\n' "active"
 
-printf '%s' "Get Cloud One Image Security load balancer IP"
+printf '%s' "Get Cloud One Smart Check load balancer IP"
 
 DSSC_HOST=''
 while [ "$DSSC_HOST" == '' ]
@@ -111,7 +111,7 @@ printf ' - %s\n' "${DSSC_HOST}"
 
 if [ ! -f ~/pwchanged ];
 then
-  printf '%s' "Authenticate to Cloud One Image Security"
+  printf '%s' "Authenticate to Cloud One Smart Check"
 
   DSSC_BEARERTOKEN=''
   while [ "$DSSC_BEARERTOKEN" == '' ]
@@ -152,7 +152,7 @@ printf '%s \n' "export DSSC_HOST=${DSSC_HOST}" > cloudOneCredentials.txt
 printf '%s \n' "export DSSC_USERNAME=${DSSC_USERNAME}" >> cloudOneCredentials.txt
 printf '%s \n' "export DSSC_PASSWORD=${DSSC_PASSWORD}" >> cloudOneCredentials.txt
 
-printf '%s' "Configure Image Security certificate"
+printf '%s' "Configure Smart Check certificate"
 
 cat <<EOF >./req.conf
 [req]
@@ -166,7 +166,7 @@ kubectl create secret tls k8s-certificate --cert=k8s.crt --key=k8s.key --dry-run
 
 printf ' - %s\n' "done"
 
-printf '%s' "Upgrading Cloud One Image Security"
+printf '%s' "Upgrading Cloud One Smart Check"
 
 helm upgrade --namespace ${DSSC_NAMESPACE} \
   --values overrides-image-security-upgrade.yml \

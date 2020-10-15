@@ -2,7 +2,7 @@
 
 set -e
 
-printf '%s' "Get Cloud One Image Security load balancer IP"
+printf '%s' "Get Cloud One Smart Check load balancer IP"
 
 DSSC_HOST=$(gcloud compute addresses describe smartcheck-address --global | sed -n 's/address: \(.*\)/\1/p')
 
@@ -10,7 +10,7 @@ printf ' - %s\n' "${DSSC_HOST}"
 
 if [ ! -f ~/pwchanged ];
 then
-  printf '%s' "Authenticate to Cloud One Image Security"
+  printf '%s' "Authenticate to Cloud One Smart Check"
 
   DSSC_TEMPPW='justatemppw'
   DSSC_BEARERTOKEN=''
