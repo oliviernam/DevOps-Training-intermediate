@@ -47,7 +47,7 @@ RUN \
     \
     # Install Packages
     apt update && \
-    apt install -y sudo vim nano jq figlet wget ssh git locales-all libffi6 libffi-dev libssl-dev ca-certificates apt-transport-https lsb-release gnupg && \
+    apt install -y sudo vim nano jq figlet wget ssh git locales-all zip libffi6 libffi-dev libssl-dev ca-certificates apt-transport-https lsb-release gnupg && \
     \
     # Google
     apt install -y google-cloud-sdk && \
