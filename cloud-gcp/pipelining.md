@@ -43,14 +43,14 @@ This virtual machine is loaded with all the development tools you'll need. It of
 
 From within the `shell`-directory of the devops-training run
 
-```shell
+```sh
 ./build.sh
 ./start.sh
 ```
 
 Now authtenticate to GCP via
 
-```shell
+```sh
 gcloud auth login
 ```
 
@@ -62,13 +62,13 @@ Once connected, you should see that you are already authenticated and that the p
 
 Run the following command to confirm that you are authenticated:
 
-```shell
+```sh
 gcloud auth list
 ```
 
 If you are not authenticated run
 
-```shell
+```sh
 gcloud auth login
 ```
 
@@ -80,14 +80,14 @@ Note: The gcloud command-line tool is the powerful and unified command-line tool
 
 First, setup a project for the training
 
-```shell
+```sh
 export PROJECT_ID=devops-training-$(openssl rand -hex 4)
 gcloud projects create ${PROJECT_ID} --name devops-training
 ```
 
 Set up some variables.
 
-```shell
+```sh
 #$(gcloud info --format='value(config.project)')
 export ZONE=europe-west2-b
 export CLUSTER=gke-deploy-cluster
@@ -95,32 +95,32 @@ export CLUSTER=gke-deploy-cluster
 
 Store values in gcloud config.
 
-```shell
+```sh
 gcloud config set project ${PROJECT_ID}
 gcloud config set compute/zone $ZONE
 ```
 
 Run the following commands to see your preset account and project. When you create resources with gcloud, this is where they get stored.
 
-```shell
+```sh
 gcloud config list project
 gcloud config list compute/zone
 ```
 
 If you're working with a new project, you likely need to enable billing and afterwards the compute API within our project. For that, we first need to look up available billing accounts.
 
-```shell
+```sh
 gcloud alpha billing accounts list
 ```
 
-```shell
+```sh
 ACCOUNT_ID            NAME                 OPEN  MASTER_ACCOUNT_ID
 019XXX-6XXXX9-4XXXX1  My Billing Account   True
 ```
 
 We now link that billing account to our project.
 
-```shell
+```sh
 gcloud alpha billing projects link ${PROJECT_ID} \
   --billing-account 019XXX-6XXXX9-4XXXX1
 ```
@@ -134,7 +134,7 @@ Make sure that the following APIs are enabled in the Google Cloud Console:
 - Compute API
 - Cloud Resource Manager API
 
-```shell
+```sh
 gcloud services enable \
     container.googleapis.com \
     containerregistry.googleapis.com \
@@ -148,7 +148,7 @@ gcloud services enable \
 
 Start your cluster with three nodes.
 
-```shell
+```sh
 gcloud container clusters create ${CLUSTER} \
     --project=${PROJECT_ID} \
     --zone=${ZONE} \
@@ -158,7 +158,7 @@ gcloud container clusters create ${CLUSTER} \
 
 Grant Cloud Build rights to your cluster.
 
-```shell
+```sh
 export PROJECT_NUMBER="$(gcloud projects describe \
     $(gcloud config get-value core/project -q) --format='get(projectNumber)')"
 
@@ -175,7 +175,7 @@ Anyone who has access to a valid private key for a service account will be able 
 
 In addition, the lifecycle of the key's access to the service account (and thus, the data the service account has access to) is independent of the lifecycle of the user who has downloaded the key.
 
-```shell
+```sh
 export GCR_SERVICE_ACCOUNT=service-gcrsvc
 
 gcloud iam service-accounts create ${GCR_SERVICE_ACCOUNT}
@@ -199,7 +199,7 @@ We cannot use the built in registry of Smart Check, because at the time of writi
 
 Define some variables
 
-```shell
+```sh
 export DSSC_NAMESPACE='smartcheck'
 export DSSC_USERNAME='administrator'
 export DSSC_PASSWORD='trendmicro'
@@ -209,7 +209,7 @@ export DSSC_REGPASSWORD='trendmicro'
 
 Set the activation code for Smart Check
 
-```shell
+```sh
 export DSSC_AC=<activation code>
 ```
 
@@ -218,27 +218,27 @@ export DSSC_AC=<activation code>
 3. Create managed certificate
 4. Create ingress
 
-```shell
+```sh
 gcloud compute addresses create smartcheck-address --global
 ```
 
 Describe the address and set DSSC_HOST
 
-```shell
+```sh
 export DSSC_HOST=$(gcloud compute addresses describe smartcheck-address --global | sed -n 's/address: \(.*\)/\1/p')
 ```
 
 To deploy Smart Check as a NodePort service, run
 
-```shell
-curl -sSL https://gist.githubusercontent.com/mawinkler/5421b398d4f46073f5f854d0485987bc/raw/9eefff41cc1f2511fd80f7fdf2f3c5a5db825d7e/deploy-np.sh | bash
+```sh
+curl -sSL https://gist.githubusercontent.com/mawinkler/5421b398d4f46073f5f854d0485987bc/raw/4845fc1914f0cd9aa1337942e541a7e4976dfab5/deploy-np.sh | bash
 ```
 
 But beware, Smart Check will not be accessible via the internet as of now, since we deployed it as a NodePort service only.
 
 Now, let's request a publicly trusted certificate for Smart Check.
 
-```shell
+```sh
 cat <<EOF > smartcheck-managed-certificate.yml
 apiVersion: networking.gke.io/v1beta2
 kind: ManagedCertificate
@@ -254,13 +254,13 @@ kubectl -n ${DSSC_NAMESPACE} apply -f smartcheck-managed-certificate.yml
 
 Next, we're defining the backend config for the health check. This is done by an annotation to the proxy service of Smart Check.
 
-```shell
+```sh
 kubectl -n smartcheck annotate service proxy cloud.google.com/app-protocols='{"https":"HTTPS","http":"HTTP"}'
 ```
 
 Now assign the certificate to the ingress we're creating below:
 
-```shell
+```sh
 cat <<EOF > smartcheck-managed-ingress.yml
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
@@ -284,7 +284,7 @@ kubectl -n ${DSSC_NAMESPACE} apply -f smartcheck-managed-ingress.yml
 
 It will take a couple of minutes (15 to 20) to get the certificates and the load balancer in configured active state. You can verify the status with
 
-```shell
+```sh
 watch "kubectl -n ${DSSC_NAMESPACE} get managedcertificates -o json | jq -r '.items[].status.domainStatus[].status'"
 ```
 
@@ -320,19 +320,20 @@ The certificate status should change to `Active` after some time. Following this
 
 Before continuing, please verify that you can access Smart Check with your browser and that it does have a valid certificate assigned. You don't need to authenticate yourself now. To get the address execute the following command:
 
-```shell
+```sh
 echo "https://smartcheck-${DSSC_HOST//./-}.nip.io"
 ```
 
 To finalize the setup of Smartcheck and do the initial password change run
 
-```shell
-curl -sSL https://gist.githubusercontent.com/mawinkler/9a64134f1398d09f69e6c8549cf80755/raw/59b2947e1580390d9531e2aed062fcd45df24414/deploy-cpw.sh | bash
+```sh
+rm -f pwchanged
+curl -sSL https://gist.githubusercontent.com/mawinkler/9a64134f1398d09f69e6c8549cf80755/raw/a239e523ed4b317cfdf6b3250d62cdaa7e1a622d/deploy-cpw.sh | bash
 ```
 
 Next, we add the Google Container Registry to Smart Check.
 
-```shell
+```sh
 # Get bearertoken
 export DSSC_BEARERTOKEN=$(curl -s -k -X POST https://${DSSC_HOST}/api/sessions -H "Content-Type: application/json"  -H "Api-Version: 2018-05-01" -H "cache-control: no-cache" -d "{\"user\":{\"userid\":\"${DSSC_USERNAME}\",\"password\":\"${DSSC_PASSWORD}\"}}" | jq '.token' | tr -d '"')
 
@@ -355,7 +356,7 @@ curl -s -k -X POST https://$DSSC_HOST/api/registries?scan=true \
 
 Define the Application Security Key and Secret.
 
-```shell
+```sh
 export TREND_AP_KEY=<YOUR CLOUD ONE APPLICATION SECURITY KEY>
 export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET>
 ```
@@ -373,7 +374,7 @@ Login to GitHub and fork the Uploaders app:
 
 And now clone it from your git:
 
-```shell
+```sh
 export APP_NAME=c1-app-sec-uploader
 export GITHUB_USERNAME="[YOUR GITHUB USERNAME]"
 git clone https://github.com/${GITHUB_USERNAME}/${APP_NAME}.git
@@ -382,7 +383,7 @@ cd ${APP_NAME}
 
 ### Create a Cloud Source Repository
 
-```shell
+```sh
 export PROJECT_ID=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
 gcloud source repos create ${APP_NAME}
 git init
@@ -392,14 +393,14 @@ git remote add gcp https://source.developers.google.com/p/${PROJECT_ID}/r/${APP_
 
 Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your Git username.
 
-```shell
+```sh
 git config --global user.email "[EMAIL_ADDRESS]"
 git config --global user.name "[USERNAME]"
 ```
 
 And finally add all the files and folders recursively to the Cloud Source Repository.
 
-```shell
+```sh
 git add .
 git commit -m "Initial commit"
 git push gcp master
@@ -414,7 +415,7 @@ In the next chapters, we're defining everything which is required to run the pip
 
 First, we create our deployment and service manifests.
 
-```shell
+```sh
 export IMAGE_NAME=${APP_NAME}
 export IMAGE_TAG=latest
 cat <<EOF > app-gcp.yml
@@ -474,7 +475,7 @@ EOF
 
 Here, we set up a build trigger to watch for changes in the source code version control system.
 
-```shell
+```sh
 # Read service keyfile
 export JSON_KEY=$(cat ~/service-gcrsvc_keyfile.json | jq tostring | sed -e 's/\\\"/\\\\\\"/g' | sed -e 's/^\"\(.*\)\"$/\1/')
 
@@ -520,13 +521,13 @@ Lastly, we create the heart of the pipeline, the `cloudbuild.yaml`.
 
 Still in our source directory, download and review the pipeline definition. Just look, do not change anything now.
 
-```shell
+```sh
 curl -sSL https://gist.githubusercontent.com/mawinkler/81f7f124e445c7f34d06b2d84b0ae81a/raw/b312606b1f4fe28f9e5b6c33406f9d3dfe0f4520/cloudbuild.yaml --output cloudbuild.yaml
 ```
 
 Populate the paramenters.
 
-```shell
+```sh
 eval "cat <<EOF
 $(<cloudbuild.yaml)
 EOF
@@ -535,7 +536,7 @@ EOF
 
 ### Trigger the Pipeline
 
-```shell
+```sh
 git add .
 git commit . -m "initial version"
 git push gcp master
@@ -547,7 +548,7 @@ The next run should work and the app is deployed on the cluster.
 
 Query the Load Balancer IP by
 
-```shell
+```sh
 kubectl get svc -n ${APP_NAME} ${APP_NAME} \
   -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 ```
@@ -560,7 +561,7 @@ Lab done.
 
 To make the defined environment variables persistent run
 
-```shell
+```sh
 ~/saveenv-gcp.sh
 ```
 
@@ -568,7 +569,7 @@ before you shut down the container.
 
 Restore with
 
-```shell
+```sh
 . ~/.gcp-lab.sh
 ```
 
@@ -586,7 +587,7 @@ Restore with
 
 ### Manually trigger the pipeline
 
-```shell
+```sh
 # by config
 gcloud builds submit --config cloudbuild.yaml .
 
@@ -596,14 +597,14 @@ gcloud alpha builds triggers run master --branch=master
 
 ### Manually build and push
 
-```shell
+```sh
 # by tag
 gcloud builds submit --tag gcr.io/${PROJECT_ID}/${IMAGE_NAME}
 ```
 
 ### Delete a cluster
 
-```shell
+```sh
 gcloud container clusters delete -q ${CLUSTER}
 ```
 
@@ -621,13 +622,13 @@ steps:
 
 Use cloud-build-local - It is possible to run the exact same build process which runs in Cloud Build on your local machine. Please keep in mind Docker is required.
 
-```shell
+```sh
 cloud-build-local --config=cloudbuild.yaml .
 ```
 
 or
 
-```shell
+```sh
 cloud-build-local --config=cloudbuild.yaml \
   --dryrun=false \
   --push .

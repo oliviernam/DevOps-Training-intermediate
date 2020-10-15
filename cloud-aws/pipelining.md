@@ -367,8 +367,9 @@ export DSSC_AC=<SMART CHECK ACTIVATION CODE>
 Finally, run
 
 ```sh
+rm -f pwchanged
 export DNS_NAME="*.${AWS_REGION}.elb.amazonaws.com" && \
-  curl -sSL https://gist.githubusercontent.com/mawinkler/68391667fdfe98d9294417f3a24d337b/raw/16f35397e934d59e89552a85599e0cda012a0713/deploy-dns.sh | bash
+  curl -sSL https://gist.githubusercontent.com/mawinkler/68391667fdfe98d9294417f3a24d337b/raw/22f595411684a3e1600531217be913cd29071c7b/deploy-dns.sh | bash
 export DSSC_HOST=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 ```
 
