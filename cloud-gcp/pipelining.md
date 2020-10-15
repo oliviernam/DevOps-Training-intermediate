@@ -333,8 +333,6 @@ curl -sSL https://gist.githubusercontent.com/mawinkler/9a64134f1398d09f69e6c8549
 Next, we add the Google Container Registry to Smart Check.
 
 ```shell
-#!/bin/bash
-
 # Get bearertoken
 export DSSC_BEARERTOKEN=$(curl -s -k -X POST https://${DSSC_HOST}/api/sessions -H "Content-Type: application/json"  -H "Api-Version: 2018-05-01" -H "cache-control: no-cache" -d "{\"user\":{\"userid\":\"${DSSC_USERNAME}\",\"password\":\"${DSSC_PASSWORD}\"}}" | jq '.token' | tr -d '"')
 
@@ -523,7 +521,7 @@ Lastly, we create the heart of the pipeline, the `cloudbuild.yaml`.
 Still in our source directory, download and review the pipeline definition. Just look, do not change anything now.
 
 ```shell
-curl -sSL https://gist.githubusercontent.com/mawinkler/81f7f124e445c7f34d06b2d84b0ae81a/raw/958dec526842dbafe17bcf60ac23213f730c38cb/cloudbuild.yaml --output cloudbuild.yaml
+curl -sSL https://gist.githubusercontent.com/mawinkler/81f7f124e445c7f34d06b2d84b0ae81a/raw/b312606b1f4fe28f9e5b6c33406f9d3dfe0f4520/cloudbuild.yaml --output cloudbuild.yaml
 ```
 
 Populate the paramenters.
