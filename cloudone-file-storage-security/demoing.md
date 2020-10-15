@@ -25,8 +25,8 @@ CloudOne File Storage Security is abbreviated by `FSS`
 
 First, create a scanning bucket in the desired region:
 
-```shell
-export REGION=eu-central-1
+```sh
+export REGION=[YOUR DESIRED AWS REGION HERE]
 export SCANNING_BUCKET=filestoragesecurity-scanning-bucket-$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)
 
 aws s3 mb s3://${SCANNING_BUCKET} --region ${REGION}
@@ -41,9 +41,9 @@ aws s3 mb s3://${SCANNING_BUCKET} --region ${REGION}
 
 *Note: You don't need to specify the license layer during the private preview phase of FSS.*
 
-Next, query `ScannerStackManagementRoleARN` and `StorageStackManagementRoleARN`.
+After the stack deployment has been completed, query the `ScannerStackManagementRoleARN` and `StorageStackManagementRoleARN`.
 
-```shell
+```sh
 export STACK_NAME=<THE STACK NAME YOU CHOSE, default FileStorageSecurity-All-In-One-Stack>
 
 echo "ScannerStackManagementRoleARN:" $(aws cloudformation describe-stacks --region ${REGION} --stack-name ${STACK_NAME} | jq -r '.Stacks[].Outputs[] | select(.OutputKey=="ScannerStackManagementRoleARN") | .OutputValue')
@@ -61,16 +61,18 @@ The basic functionality of FSS is to scan on file upload to the `filestoragesecu
 
 Download the `eicarcom2.zip` and upload it to the scanning bucket.
 
-```shell
+```sh
 export SCANNING_BUCKET=$(aws s3 ls | sed -n 's/.*\(filestoragesecurity-scanning-bucket.*\)/\1/p')
 
 wget https://secure.eicar.org/eicarcom2.zip
 aws s3 cp eicarcom2.zip s3://${SCANNING_BUCKET}/eicarcom2.zip
 ```
 
-To get the scan result, simply query the tags of the file
+Give the scanner a few seconds to complete the scan and tag the files accordingly.
 
-```shell
+To get the scan results, simply query the tags of the file.
+
+```sh
 aws s3api get-object-tagging --bucket ${SCANNING_BUCKET} --key eicarcom2.zip
 ```
 
@@ -99,24 +101,24 @@ aws s3api get-object-tagging --bucket ${SCANNING_BUCKET} --key eicarcom2.zip
 
 First, lets list the log groups:
 
-```shell
+```sh
 aws logs describe-log-groups --region ${REGION}
 ```
 
 Identify the log group by searching for `PostScanAction` and store it in a variable.
 
-```shell
+```sh
 export LOGGROUP_PSA=$(aws logs describe-log-groups --region ${REGION} | jq -r '.logGroups[] | select(.logGroupName | contains("PostScanAction")) | .logGroupName')
 echo ${LOGGROUP_PSA}
 ```
 
-```shell
+```sh
 /aws/lambda/FileStorageSecurity-All-In-PostScanActionTagLambda-PDHWFFZU04BK
 ```
 
 Lets list the logs streams on our log group
 
-```shell
+```sh
 aws logs describe-log-streams --region ${REGION} --log-group-name ${LOGGROUP_PSA}
 ```
 
@@ -147,22 +149,22 @@ aws logs describe-log-streams --region ${REGION} --log-group-name ${LOGGROUP_PSA
 }
 ```
 
-If you have a lot os objets and you already now the date of the test, you can use it as a prefix filter. Like:
+If you have a lot of objets and you already now the date of the test, you can use it as a prefix filter. Like:
 
-```shell
+```sh
 aws logs describe-log-streams --log-group-name ${LOGGROUP_PSA} --log-stream-name-prefix 2020/09/23
 ```
 
 For this lab, we're just using the latest log stream
 
-```shell
+```sh
 export LOGSTREAM_PSA=$(aws logs describe-log-streams --region ${REGION} --log-group-name ${LOGGROUP_PSA} | jq -r '.logStreams | sort_by(.lastEventTimestamp)[-1].logStreamName')
 echo ${LOGSTREAM_PSA}
 ```
 
 ### Query the Logs
 
-```shell
+```sh
 aws logs get-log-events --region ${REGION} --log-group-name ${LOGGROUP_PSA} --log-stream-name ${LOGSTREAM_PSA}
 ```
 
@@ -219,33 +221,33 @@ In the output of the command we will see the result of the scan on the log:
 
 If you are interested on the total time spent to scan the files, we need to dig into a different log group, which you can identify with the "ScannerLambda" within its name.
 
-```shell
+```sh
 export LOGGROUP_SL=$(aws logs describe-log-groups --region ${REGION} | jq -r '.logGroups[] | select(.logGroupName | contains("ScannerLambda")) | .logGroupName')
 echo ${LOGGROUP_SL}
 ```
 
-```shell
+```sh
 /aws/lambda/FileStorageSecurity-All-In-One-Stack-ScannerLambda-170WMQJ2HLTJR
 ```
 
-```shell
+```sh
 export LOGSTREAM_SL=$(aws logs describe-log-streams --region ${REGION} --log-group-name ${LOGGROUP_SL} | jq -r '.logStreams | sort_by(.lastEventTimestamp)[-1].logStreamName')
 echo ${LOGSTREAM_SL}
 ```
 
-```shell
+```sh
 2020/09/18/[$LATEST]875f932baf734fb7b53f6e3c6ceb6e3f
 ```
 
 To query scan results, execute
 
-```shell
+```sh
 aws logs get-log-events --region ${REGION} --log-group-name ${LOGGROUP_SL} --log-stream-name ${LOGSTREAM_SL} | jq -r '.events[] | select(.message | startswith("scan context") or startswith("scanner result")) | .message'
 ```
 
-Note that the time is in milliseconds. The output of the command:
+Note that the time is in milliseconds. The output of the command: (check the `scanDurationMS` field)
 
-```shell
+```sh
 scanner result: {"timestamp": 1600424846.7413783, "sqs_message_id": "aba6b077-5fa4-49cb-ac7f-796349b7e238", "file_url": "https://filestoragesecurity-scanning-bucket-gw6i2g.s3.amazonaws.com/eicar.com", "scanner_status": 0, "scanner_status_message": "successful scan", "scanning_result": {"TotalBytesOfFile": 68, "Findings": [{"malware": "Eicar_test_file", "type": "Virus"}], "Error": ""}}
 
 scan context: {"messageID": "aba6b077-5fa4-49cb-ac7f-796349b7e238", "messageFirstReceiveTimestamp": 1600424844186, "messageReceiveCount": 1, "bucket": "filestoragesecurity-scanning-bucket-gw6i2g", "objectKey": "eicar.com", "scanDurationMS": 250, "scanStartTimestamp": 1600424846}
@@ -257,11 +259,11 @@ scan context: {"messageID": "ad471ca3-a000-4409-83b4-eceac8dccf81", "messageFirs
 
 ### Query with CloudWatch Insights
 
-As a option, you can do a query through the CloudWatch Insights. This is just another way to show the logs of the scanner.
+As an option, you can do a query through the CloudWatch Insights. This is just another way to show the logs of the scanner.
 
 Lets do it:
 
-```shell
+```sh
 export LOGGROUP_SL=$(aws logs describe-log-groups --region ${REGION} | jq -r '.logGroups[] | select(.logGroupName | contains("ScannerLambda")) | .logGroupName')
 
 aws logs start-query --region ${REGION} \
@@ -281,7 +283,7 @@ The command returned the query id.
 
 So, lets use this id to get the logs that we queried.
 
-```shell
+```sh
 aws logs get-query-results --region ${REGION} --query-id 93873c9d-ba90-4520-b7fa-4bf511f90bb4
 ```
 
@@ -360,7 +362,7 @@ FSS does only tag scanned files. This effectively means, that the logic if the u
 
 Still being in your aws cli session create two S3 buckets.
 
-```shell
+```sh
 export PROMOTE_BUCKET=filestoragesecurity-promote-bucket-$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)
 export QUARANTINE_BUCKET=filestoragesecurity-quarantine-bucket-$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)
 
@@ -370,7 +372,7 @@ aws s3 mb s3://${QUARANTINE_BUCKET} --region ${REGION}
 
 Create the FSS trust policy
 
-```shell
+```sh
 cat <<EOF > fss-trust-policy.json
 {
     "Version": "2012-10-17",
@@ -406,7 +408,7 @@ aws iam create-policy --policy-name FSS_Lambda_Policy --policy-document file://f
 
 Create an execution role for the Lambda function
 
-```shell
+```sh
 LAMBDA_TRUST="{
     \"Version\": \"2012-10-17\", 
     \"Statement\": [
@@ -431,7 +433,7 @@ export ROLE_ARN=$(aws iam list-roles | jq -r '.Roles[] | select(.Arn | contains(
 
 Deploy the Lambda
 
-```shell
+```sh
 wget https://raw.githubusercontent.com/trendmicro/cloudone-filestorage-plugins/master/post-scan-actions/aws-python-promote-or-quarantine/handler.py
 
 zip promote-or-quarantine.zip handler.py
@@ -451,7 +453,7 @@ Subscribe the Lambda to the SNS topic
 
 Query the ScanResultTopic ARN
 
-```shell
+```sh
 export STORAGE_STACK=$(aws cloudformation list-stacks --region ${REGION} | jq --arg stack_name ${STACK_NAME} -r '.StackSummaries[] | select(.StackId | contains($stack_name) and contains("-StorageStack")) | select(.StackStatus=="CREATE_COMPLETE") | .StackName')
 
 export SCAN_RESULT_TOPIC_ARN=$(aws cloudformation list-stack-resources --region ${REGION} --stack-name ${STORAGE_STACK} | jq -r '.StackResourceSummaries[] | select(.LogicalResourceId=="ScanResultTopic") | .PhysicalResourceId')
@@ -459,22 +461,22 @@ export SCAN_RESULT_TOPIC_ARN=$(aws cloudformation list-stack-resources --region 
 
 Query the Lambda ARN
 
-```shell
+```sh
 export LAMBDA_ARN=$(aws lambda list-functions --region ${REGION} | jq -r '.Functions[] | select(.FunctionName | contains("FSS_Prom_Quar_Lambda")) | .FunctionArn')
 ```
 
 Subscribe the Lambda to the SNS topic
 
-```shell
+```sh
 aws sns subscribe --topic-arn ${SCAN_RESULT_TOPIC_ARN} --protocol lambda --notification-endpoint ${LAMBDA_ARN} --region ${REGION}
 ```
 
 Lastly, we need to grant the SNS service permission to invoke our function.
 
-```shell
+```sh
 aws lambda add-permission \
   --function-name FSS_Prom_Quar_Lambda \
-  --region us-east-1 \
+  --region ${REGION} \
   --statement-id sns \
   --action lambda:InvokeFunction \
   --principal sns.amazonaws.com \
@@ -486,14 +488,14 @@ aws lambda add-permission \
 
 Download the `eicar.com` and upload it to the scanning bucket.
 
-```shell
+```sh
 wget https://secure.eicar.org/eicar.com
 aws s3 cp eicar.com s3://${SCANNING_BUCKET}/eicar.com
 ```
 
 Download a second, clean file and upload it.
 
-```shell
+```sh
 wget https://www.google.de/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png
 aws s3 cp googlelogo_color_272x92dp.png s3://${SCANNING_BUCKET}/googlelogo_color_272x92dp.png
 ```
@@ -506,19 +508,19 @@ If everything works, you should be able to find the eicar file in the quarantine
 
 First, lets list the log groups:
 
-```shell
+```sh
 aws logs describe-log-groups --region ${REGION}
 ```
 
 Identify the log group by searching for `FSS_Prom_Quar` and store it in a variable.
 
-```shell
+```sh
 export LOGGROUP_PQL=$(aws logs describe-log-groups --region ${REGION} | jq -r '.logGroups[] | select(.logGroupName | contains("FSS_Prom_Quar")) | .logGroupName')
 ```
 
 Lets list the logs streams on our log group
 
-```shell
+```sh
 aws logs describe-log-streams --region ${REGION} --log-group-name ${LOGGROUP_PQL}
 ```
 
@@ -526,13 +528,13 @@ You should get as many log stream as you have scanned files.
 
 If you have a lot of objets and you already now the date of the test, you can use it as a prefix filter. Like:
 
-```shell
+```sh
 aws logs describe-log-streams --log-group-name --region ${REGION} ${LOGGROUP_PQL} --log-stream-name-prefix $(date +"%Y/%m/%d")
 ```
 
 Lastly, lets review the scan results.
 
-```shell
+```sh
 export LOGSTREAMS_SL=$(aws logs describe-log-streams --region ${REGION} --log-group-name ${LOGGROUP_PQL} | jq -r '.logStreams[] | .logStreamName')
 
 for ls in ${LOGSTREAMS_SL} ; do 
