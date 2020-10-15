@@ -39,7 +39,7 @@ steps:
             --smartcheck-user=\$\${DSSC_USER} \
             --smartcheck-password=\$\${DSSC_PASSWORD} \
             --image-pull-auth="\$\${PULL_AUTH}" \
-            --findings-threshold='{"malware": 0, "vulnerabilities": { "defcon1": 0, "critical": 0, "high": 0 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
+            --findings-threshold='{"malware": 0, "vulnerabilities": { "defcon1": 0, "critical": 10, "high": 100 }, "contents": { "defcon1": 0, "critical": 0, "high": 0 }, "checklists": { "defcon1": 0, "critical": 0, "high": 0 }}'
 
 ### Deploy
   - id: 'deploy'
@@ -55,16 +55,17 @@ steps:
       - '-c'
       - |
           CLUSTER=\$\$(gcloud config get-value container/cluster)
-          PROJECT=\$\$(gcloud config get-value core/project)
+          PROJECT_ID=\$\$(gcloud config get-value core/project)
           ZONE=\$\$(gcloud config get-value compute/zone)
 
           gcloud container clusters get-credentials "$\${CLUSTER}" \
             --project "\$\${PROJECT_ID}" \
             --zone "\$\${ZONE}"  
 
-          sed -i 's|gcr.io/PROJECT/IMAGE_NAME:IMAGE_TAG|gcr.io/$PROJECT/$IMAGE_NAME:$IMAGE_TAG|' ./app-gcp.yml
+          sed -i 's|gcr.io/PROJECT/IMAGE_NAME:IMAGE_TAG|gcr.io/$PROJECT_ID/$IMAGE_NAME:$IMAGE_TAG|' ./app-gcp.yml
           sed -i 's|_TREND_AP_KEY|\$\${CLOUDONE_TREND_AP_KEY}|' ./app-gcp.yml
           sed -i 's|_TREND_AP_SECRET|\$\${CLOUDONE_TREND_AP_SECRET}|' ./app-gcp.yml
 
           kubectl get ns $IMAGE_NAME || kubectl create ns $IMAGE_NAME
           kubectl apply --namespace $IMAGE_NAME -f app-gcp.yml
+          
