@@ -130,7 +130,8 @@ export DSSC_AC=<SMART CHECK ACTIVATION CODE>
 Finally, run
 
 ```shell
-curl -sSL https://gist.githubusercontent.com/mawinkler/7b9cc48a8b2cf96e07e4eadd6e8e9497/raw/e1fc92109f064e7c14375a548b3ad4c8e00c64c0/deploy-ip.sh | bash
+rm -f pwchanged
+curl -sSL https://gist.githubusercontent.com/mawinkler/7b9cc48a8b2cf96e07e4eadd6e8e9497/raw/aa9361ee163e584874f1ced3f65a9d76c63214b0/deploy-ip.sh | bash
 export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 export DSSC_HOST="smartcheck-${DSSC_HOST_IP//./-}.nip.io"
 ```
@@ -383,6 +384,23 @@ az pipelines variable create \
 
 ### Integrate Application Security in the deployment manifest
 
+Azure did create three files directly within your source code repo. To get these files to your current working directory, execute the following command:
+
+```sh
+git pull azure master
+```
+
+The following three files should now be available locally:
+
+```sh
+...
+Fast-forward
+ azure-pipelines.yml      | 79 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ manifests/deployment.yml | 19 ++++++++++++++++++
+ manifests/service.yml    | 10 ++++++++++
+...
+```
+
 Open the `manifests/deployment.yml` with your preferred editor and modify the `containers`-part as shown below. Insert the `env`-block after the `image:`-line.
 
 ```yaml
@@ -400,6 +418,7 @@ spec:
             value: _TREND_AP_KEY
           - name: TREND_AP_SECRET
             value: _TREND_AP_SECRET
+          ports:
           ...
 ```
 

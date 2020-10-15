@@ -27,8 +27,8 @@ variables:
   dsscBuildScanUser: administrator
   dsscBuildScanPassword: trendmicro
 
-  applicationSecurityKey: 040beea0-3efc-4699-8c95-cadf21b01545
-  applicationSecuritySecret: 5d8b9064-caf4-4c59-8d56-ed01552ad854
+  applicationSecurityKey: 04b906e0-3efc-4caf-8c95-cad1552ad545
+  applicationSecuritySecret: 5d869964-caf4-ef59-8d56-ead155cad854
 
 stages:
 - stage: Build
