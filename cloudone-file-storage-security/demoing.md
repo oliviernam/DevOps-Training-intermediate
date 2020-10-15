@@ -62,8 +62,6 @@ The basic functionality of FSS is to scan on file upload to the `filestoragesecu
 Download the `eicarcom2.zip` and upload it to the scanning bucket.
 
 ```sh
-export SCANNING_BUCKET=$(aws s3 ls | sed -n 's/.*\(filestoragesecurity-scanning-bucket.*\)/\1/p')
-
 wget https://secure.eicar.org/eicarcom2.zip
 aws s3 cp eicarcom2.zip s3://${SCANNING_BUCKET}/eicarcom2.zip
 ```
