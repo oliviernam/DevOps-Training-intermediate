@@ -27,6 +27,7 @@
     - [Example `manifests/deployment.yml`](#example-manifestsdeploymentyml)
     - [Example `manifests/service.yml`](#example-manifestsserviceyml)
     - [Example `azure-pipelines.yml`](#example-azure-pipelinesyml)
+    - [Suspend Virtual Machines](#suspend-virtual-machines)
     - [Clean up resources](#clean-up-resources)
   - [Azure Commands](#azure-commands)
 
@@ -52,14 +53,14 @@ Info: <https://docs.microsoft.com/en-us/azure/cloud-shell/overview>
 
 From within the `shell`-directory of the devops-training run
 
-```shell
+```sh
 ./build.sh
 ./start.sh
 ```
 
 Now authtenticate to Azure via
 
-```shell
+```sh
 az login
 ```
 
@@ -67,21 +68,21 @@ and follow the process.
 
 ### Create a Resource Group
 
-```shell
+```sh
 export APP_NAME=c1-app-sec-uploader
 az group create --name ${APP_NAME} --location westeurope
 ```
 
 ### Create a Container Registry
 
-```shell
+```sh
 export APP_REGISTRY=c1appsecuploaderregistry$(openssl rand -hex 4)
 az acr create --resource-group ${APP_NAME} --name ${APP_REGISTRY} --sku Basic
 ```
 
 ### Create a Kubernetes Cluster
 
-```shell
+```sh
 export CLUSTER_NAME=appcluster
 az aks create \
     --resource-group ${APP_NAME} \
@@ -93,13 +94,13 @@ az aks create \
 
 To configure kubectl to connect to your Kubernetes cluster, use the az aks get-credentials command. The following example gets credentials for the AKS cluster named appcluster in the ${APP_NAME} resource group:
 
-```shell
+```sh
 az aks get-credentials --resource-group ${APP_NAME} --name ${CLUSTER_NAME}
 ```
 
 To verify the connection to your cluster, run the kubectl get nodes command to return a list of the cluster nodes:
 
-```shell
+```sh
 kubectl get nodes
 ```
 
@@ -113,7 +114,7 @@ aks-nodepool1-30577774-vmss000001   Ready    agent   39m   v1.16.10
 
 Define some variables
 
-```shell
+```sh
 export DSSC_NAMESPACE='smartcheck'
 export DSSC_USERNAME='administrator'
 export DSSC_PASSWORD='trendmicro'
@@ -123,13 +124,13 @@ export DSSC_REGPASSWORD='trendmicro'
 
 Set the activation code for Smart Check
 
-```shell
+```sh
 export DSSC_AC=<SMART CHECK ACTIVATION CODE>
 ```
 
 Finally, run
 
-```shell
+```sh
 rm -f pwchanged
 curl -sSL https://gist.githubusercontent.com/mawinkler/7b9cc48a8b2cf96e07e4eadd6e8e9497/raw/aa9361ee163e584874f1ced3f65a9d76c63214b0/deploy-ip.sh | bash
 export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
@@ -140,7 +141,7 @@ export DSSC_HOST="smartcheck-${DSSC_HOST_IP//./-}.nip.io"
 
 Define the Application Security Key and Secret.
 
-```shell
+```sh
 export TREND_AP_KEY=<YOUR CLOUD ONE APPLICATION SECURITY KEY>
 export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET>
 ```
@@ -161,7 +162,7 @@ Press `New Token`. Give the Token a name (e.g. `MyToken`), set Organization to `
 
 Copy the token and store it somewhere secure.
 
-```shell
+```sh
 export AZURE_DEVOPS_EXT_PAT=<YOUR_PAT>
 ```
 
@@ -171,13 +172,13 @@ To store it in the environment.
 
 Likely, you need to activate the `azure-devops` extension. To get a list of available extensions type
 
-```shell
+```sh
 az extension list-available --output table | grep devops
 ```
 
 We only need the `azure-devops` to be installed by
 
-```shell
+```sh
 az extension add --name azure-devops
 ```
 
@@ -185,7 +186,7 @@ Now, login to your DevOps organization by the use of the PAT. The variable you'r
 
 `https://dev.azure.com/markus-winkler`
 
-```shell
+```sh
 export DEVOPS_ORGANIZATION=<URL OF YOUR DEVOPS ORGANIZATION>
 echo ${AZURE_DEVOPS_EXT_PAT} | az devops login --org ${DEVOPS_ORGANIZATION}
 az devops project list --org ${DEVOPS_ORGANIZATION}
@@ -193,7 +194,7 @@ az devops project list --org ${DEVOPS_ORGANIZATION}
 
 and create a project
 
-```shell
+```sh
 az devops project create \
   --name ${APP_NAME} \
   --description 'Project for the Uploader' \
@@ -215,27 +216,27 @@ Login to GitHub and fork the Uploaders app:
 
 And now clone it from your git:
 
-```shell
+```sh
 export GITHUB_USERNAME="[YOUR GITHUB USERNAME]"
 git clone https://github.com/${GITHUB_USERNAME}/${APP_NAME}.git
 cd ${APP_NAME}
 ```
 
-```shell
+```sh
 git init
 git remote add azure https://${AZURE_DEVOPS_EXT_PAT}@${DEVOPS_ORGANIZATION//https:\/\//}/${APP_NAME}/_git/${APP_NAME}
 ```
 
 Set the username and email address for your Git commits. Replace [EMAIL_ADDRESS] with your Git email address. Replace [USERNAME] with your Git username.
 
-```shell
+```sh
 git config --global user.email "[EMAIL_ADDRESS]"
 git config --global user.name "[USERNAME]"
 ```
 
 And finally add all the files and folders recursively to the Cloud Source Repository.
 
-```shell
+```sh
 git add .
 git commit -m "Initial commit"
 git push azure master
@@ -245,7 +246,7 @@ git push azure master
 
 Next step is to create our pipeline to build, scan, push and deploy the app to the AKS cluster. Do this by
 
-```shell
+```sh
 az pipelines create \
   --name ${APP_NAME} \
   --branch master \
@@ -267,7 +268,7 @@ Which template do you want to use for this pipeline?
 Please enter a choice: `Deploy to Azure Kubernetes Service`
 
 The template requires a few inputs. We will help you fill them out
-Using your default Azure subscription Nutzungsbasierte Bezahlung for fetching AKS clusters.
+Using your default Azure subscription `YOUR SUBSCRIPTION NAME` for fetching AKS clusters.
 Which kubernetes cluster do you want to target for this pipeline?
 
 Please enter a choice: `appcluster`
@@ -276,20 +277,9 @@ Which kubernetes namespace do you want to target?
 
 Please enter a choice: `default`
 
-Using your default Azure subscription Nutzungsbasierte Bezahlung for fetching Azure Container Registries.
 Which Azure Container Registry do you want to use for this pipeline?
 
 Please enter a choice: `c1appsecuploaderregistryA1B2C3D4`
-
-Enter a value for Image Name [Press Enter for default: cappsecuploaderdev]:
-
-Enter a value for Service Port [Press Enter for default: 80]:
-
-Please enter a value for Enable Review App flow for Pull Requests:
-
-Using your default Azure subscription `YOUR SUBSCRIPTION NAME` for creating Azure RM connection.
-Which Azure Container Registry do you want to use for this pipeline?
-Please enter a choice: `c1appsecuploaderregistry`
 
 Enter a value for Image Name [Press Enter for default: cappsecuploaderdev]:
 
@@ -328,7 +318,7 @@ Done, puuh.
 
 Define the following variables required for the scan action within the variables section of your pipeline.
 
-```shell
+```sh
 az pipelines variable create \
   --name dsscHost \
   --pipeline-name ${APP_NAME} \
@@ -496,7 +486,7 @@ If you now `commit` and `push` the pipeline should run successfully.
 
 And finally add all the files and folders recursively to the CodeCommit Repository.
 
-```shell
+```sh
 git commit . -m "cloud one integrated"
 git push azure master
 ```
@@ -531,7 +521,7 @@ We invite you to learn more about:
 
 To make the defined environment variables persistent run
 
-```shell
+```sh
 ~/saveenv-az.sh
 ```
 
@@ -539,7 +529,7 @@ before you shut down the container.
 
 Restore with
 
-```shell
+```sh
 . ~/.az-lab.sh
 ```
 
@@ -708,11 +698,21 @@ stages:
                 $(containerRegistry)/$(imageRepository):$(tag)
 ```
 
+### Suspend Virtual Machines
+
+```sh
+export AZ_VMSS=`az vmss list | jq -r '.[].name'`
+export AZ_RESOURCE_GROUP=`az vmss list | jq -r '.[].resourceGroup'`
+echo ${AZ_VMSS}
+echo ${AZ_RESOURCE_GROUP}
+az vmss stop --name ${AZ_VMSS} --resource-group ${AZ_RESOURCE_GROUP}
+```
+
 ### Clean up resources
 
 Whenever you're done with the resources you created above, you can use the following command to delete them:
 
-```shell
+```sh
 az group delete --name ${APP_NAME}
 ```
 
@@ -720,6 +720,6 @@ az group delete --name ${APP_NAME}
 
 List locations:
 
-```shell
+```sh
 azure location list --json
 ```
