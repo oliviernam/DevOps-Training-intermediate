@@ -25,8 +25,6 @@ It is worth noting that some aspects of Kubernetes’ operation that many users 
 
 Among the more than 30 admission controllers shipped with Kubernetes, two take a special role because of their nearly limitless flexibility - `ValidatingAdmissionWebhooks` and `MutatingAdmissionWebhooks`. We will examine these two admission controllers closely, as they do not implement any policy decision logic themselves. Instead, the respective action is obtained from a REST endpoint (a webhook) of a service running inside the cluster. This approach decouples the admission controller logic from the Kubernetes API server, thus allowing users to implement custom logic to be executed whenever resources are created, updated, or deleted in a Kubernetes cluster.
 
-**The above is, what Cloud One Container Control actually does. It registers itself as a ValidatingAdmissionWebhook.**
-
 The difference between the two kinds of admission controller webhooks is pretty much self-explanatory: mutating admission webhooks may mutate the objects, while validating admission webhooks may not. However, even a mutating admission webhook can reject requests and thus act in a validating fashion. Validating admission webhooks have two main advantages over mutating ones: first, for security reasons it might be desirable to disable the MutatingAdmissionWebhook admission controller (or apply stricter RBAC restrictions as to who may create MutatingWebhookConfiguration objects) because of its potentially confusing or even dangerous side effects. Second, as shown in the previous diagram, validating admission controllers (and thus webhooks) are run after any mutating ones. As a result, whatever request object a validating webhook sees is the final version that would be persisted to etcd.
 
 The set of enabled admission controllers is configured by passing a flag to the Kubernetes API server.
@@ -125,7 +123,7 @@ With this logic, our admission logic would reject any pod to be deployed on our 
 
 You might wonder, what all the above has to do with Cloud One...
 
-So, the answer is quite easy - Container Security effectively registeres a service as a validating webhook, whereby the policies the user did create within the Cloud One console are evaluated by a some Lambdas and a built-in Open Policy Agent.
+So, the answer is quite easy - Container Security registeres a service as a validating webhook, whereby the policies the user did create within the Cloud One console are evaluated by a some Lambdas and a built-in Open Policy Agent.
 
 ![alt text](images/architecture.png "Container Security Architecture")
 
