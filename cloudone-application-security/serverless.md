@@ -22,6 +22,10 @@
     - [SQL Injection Policy Configuration](#sql-injection-policy-configuration)
     - [Illegal File Access Policy Configuration](#illegal-file-access-policy-configuration)
     - [Remote Command Execution Policy Configuration](#remote-command-execution-policy-configuration)
+  - [InSekureStore - Attacks](#insekurestore---attacks)
+    - [SQL Injection](#sql-injection)
+    - [Directory Traversal](#directory-traversal)
+    - [Remote Command Execution](#remote-command-execution)
 
 Here, we're going to deploy a fully Lambda driven web application on AWS. Of course, we'll protect it by CloudOne Application Security.
 
@@ -36,7 +40,7 @@ Here, we're going to deploy a fully Lambda driven web application on AWS. Of cou
 
 The virtual disk provisioned for Cloud9 is to small for our lab, therefore we need to increase the storage size before proceeding.
 
-```shell
+```sh
 SIZE=${1:-20}
 INSTANCEID=$(curl http://169.254.169.254/latest/meta-data//instance-id)
 VOLUMEID=$(aws ec2 describe-instances \
@@ -62,19 +66,19 @@ sudo resize2fs /dev/nvme0n1p1
 
 ## Install Node
 
-```shell
+```sh
 curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
 If you get the error `E: Cloud not get lock /var/lib/dpkg frontend lock...` you need to wait 2 to 3 minutes for the background task to complete. Simply retry the `apt-get install`. Then check the node version with
 
-```shell
+```sh
 nodejs --version
 ```
 
 ```text
-v14.07.0
+v14.14.0
 ```
 
 ## Update IAM Settings for the Workspace
@@ -86,7 +90,7 @@ v14.07.0
 
 Install AWS CLI.
 
-```shell
+```sh
 sudo apt install -y awscli
 ```
 
@@ -94,16 +98,16 @@ sudo apt install -y awscli
 
 ### Install
 
-```shell
-sudo npm install -g serverless
+```sh
+npm install -g serverless
 serverless --version
 ```
 
 ```text
-Framework Core: 1.78.1
-Plugin: 3.7.0
-SDK: 2.3.1
-Components: 2.34.1
+Framework Core: 2.8.0
+Plugin: 4.1.1
+SDK: 2.3.2
+Components: 3.2.5
 ```
 
 ### Create serverless AWS user
@@ -111,22 +115,24 @@ Components: 2.34.1
 Services in AWS, such as AWS Lambda, require that you provide credentials when you access them to ensure that you have permission to access the resources owned by that service. To accomplish this AWS recommends that you use AWS Identity and Access Management (IAM).
 
 1. Login to your AWS account and go to the Identity & Access Management (IAM) page.
-2. Follow this deep link to create the serverless AWS user: <https://console.aws.amazon.com/iam/home?region=eu-central-1#/users$new?step=review&accessKey&userNames=serverless-admin&groups=Administrators>
-3. Confirm that `AWS service and EC2 are selected` and Group `Administrators` are listed, then click `Create user` to view permissions.
+2. Follow this deep link to create the serverless AWS user: <https://console.aws.amazon.com/iam/home?#/users$new?step=review&accessKey&userNames=serverless-admin&groups=Administrators>
+3. Confirm that Group `Administrators` is listed, then click `Create user` to view permissions.
 4. View and copy the API Key & Secret to a temporary place. You'll need it in the next step.
 
 ### Create a Role for Lambda, S3, RDS
 
-1. Create a role by following this deep link: <https://console.aws.amazon.com/iam/home?region=eu-central-1#/roles$new?step=review&commonUseCase=Lambda%2BLambda&selectedUseCase=Lambda&policies=arn:aws:iam::aws:policy%2FAmazonS3FullAccess&policies=arn:aws:iam::aws:policy%2FAWSLambdaFullAccess&policies=arn:aws:iam::aws:policy%2FAmazonEC2FullAccess&policies=arn:aws:iam::aws:policy%2FAmazonRDSFullAccess>
+1. Create a role by following this deep link: <https://console.aws.amazon.com/iam/home?#/roles$new?step=review&commonUseCase=Lambda%2BLambda&selectedUseCase=Lambda&policies=arn:aws:iam::aws:policy%2FAmazonS3FullAccess&policies=arn:aws:iam::aws:policy%2FAWSLambdaFullAccess&policies=arn:aws:iam::aws:policy%2FAmazonEC2FullAccess&policies=arn:aws:iam::aws:policy%2FAmazonRDSFullAccess>
 2. Without chaning anything, press `Next: Permissions`, `Next: Tags`, `Next: Review`.
-3. Set the Role name to `trend-demo-lambda-s3-role`, Press `Create` and note the ARN.
+3. Set the Role name to `serverless-lambda-s3-role`, Press `Create` and note the ARN.
 
 ### Configure Serverless
 
+#FIXME: I'm pretty sure that this is NOT required anymore
+
 Configure your Cloud9 AWS with the access keys of the just created serverless aws user
 
-```shell
-aws configure
+```sh
+#aws configure
 ```
 
 ## Demoing Application Security with the Serverless InSekureStore
@@ -135,7 +141,7 @@ aws configure
 
 Do a git clone:
 
-```shell
+```sh
 git clone https://github.com/mawinkler/c1-app-sec-insekurestore.git
 cd c1-app-sec-insekurestore
 ```
@@ -166,7 +172,7 @@ TREND_AP_READY_TIMEOUT: 30
 
 # Lambda Function Configs
 REGION: <your-region-here>
-S3_BUCKET: insecures3-${file(s3bucketid.js):bucketId}
+S3_BUCKET: insekures3-${file(s3bucketid.js):bucketId}
 LAYER: arn:aws:lambda:${self:custom.variables.REGION}:800880067056:layer:CloudOne-ApplicationSecurity-runtime-python3_6:4
 ROLE: <your-just-created-role-arn-here>
 ```
@@ -175,20 +181,20 @@ ROLE: <your-just-created-role-arn-here>
 
 Install the python requirements for serverless.
 
-```shell
+```sh
 serverless plugin install --name serverless-python-requirements
 ```
 
 Configure serverless AWS provider credentials
 
-```shell
+```sh
 serverless config credentials --provider aws --key <API KEY OF SERVERLESS USER CREATED ABOVE> --secret '<API SECRET KEY OF SERVERLESS USER CREATED ABOVE>' -o
 ```
 
 And deploy
 
-```shell
-sls -v deploy --stage dev --aws-profile default
+```sh
+serverless deploy --stage dev --aws-profile default
 ```
 
 If everything is successful you will get a link to your lambda driven web application.
@@ -235,13 +241,13 @@ Serverless: Run the "serverless" command to setup monitoring, troubleshooting an
 
 Before accessing the app, you need to initialize the database
 
-```shell
-sls invoke -f db -l --aws-profile default
+```sh
+serverless invoke -f db -l --aws-profile default
 ```
 
 ### Upload Some Files
 
-Within the AWS Console, go to S3 and find the bucket named `insecures3-SOMETHING` with `Public` access and upload some files there, e.g. the `kubernetes.png` and `kubernetes.txt` from the repo.
+Within the AWS Console, go to S3 and find the bucket named `insekures3-SOMETHING` with `Public` access and upload some files there, e.g. the `kubernetes.png` and `kubernetes.txt` from the repo.
 
 ### Access the Serverless Application
 
@@ -258,8 +264,8 @@ The first authentication can likely fail, since the database cluster might not b
 
 ### Remove the InSekureStore
 
-```shell
-sls remove --aws-profile default
+```sh
+serverless remove --aws-profile default
 ```
 
 ## Cloud1 Application Security Configuration
@@ -284,3 +290,45 @@ Add the following rule on top of the preconfigured one:
 file "/tmp/*.*" -b              <-- Allow
 .*                              <-- Block
 ```
+
+## InSekureStore - Attacks
+
+### SQL Injection
+
+At the login screen
+
+```text
+E-Mail: 1'or'1'='1
+```
+
+```text
+Password: 1'or'1'='1
+```
+
+*Application Security Protection by `SQL Injection - Always True`*
+
+### Directory Traversal
+
+URL
+
+```text
+...dev#/browser?view=../../../etc/passwd
+```
+
+### Remote Command Execution
+
+Go to `Mime Type Params` and change to
+
+```text
+-b && whoami
+```
+
+or
+
+```text
+-b && uname -a
+```
+
+Within the details of a text file you will see the output of your command.
+
+*Application Security Protection by `Remote Command Execution`*
