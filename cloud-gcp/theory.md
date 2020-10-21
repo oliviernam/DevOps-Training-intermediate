@@ -9,6 +9,7 @@
       - [Security](#security)
       - [Creating a Cluster](#creating-a-cluster)
     - [GCR](#gcr)
+    - [Container Analysis](#container-analysis)
   - [Services - Serverless](#services---serverless)
     - [Cloud Run](#cloud-run)
     - [App Engine](#app-engine)
@@ -107,6 +108,35 @@ where:
 - PROJECT-ID is your Google Cloud Console project ID. If your project ID contains a colon (:), see Domain-scoped projects below.
 - IMAGE is the image's name. It can be different than the image's local name. In the Google Cloud Console, the project's registries are listed by the image name. Each repository can hold multiple images with the same name. For example, it may hold different versions of an image called "quickstart-image".
 - adding either :TAG or @IMAGE-DIGEST at the end allows you to distinguish a specific version of the image, but it is also optional. If you don't specify a tag or the digest, Container Registry looks for the image with the default tag latest
+
+### Container Analysis
+
+Container Analysis is a service that provides vulnerability scanning and metadata storage for software artifacts. The scanning service performs vulnerability scans on images in Container Registry, then stores the resulting metadata and makes it available for consumption through an API. Metadata storage allows storing information from different sources, including vulnerability scanning, other Cloud services, and third-party providers.
+
+![alt text](images/container-analysis.png "Google Container Analysis")
+
+Diagram that shows Container Analysis as CI/CD pipeline component that interacts with metadata across source, build, storage, and deployment stages as well as runtime environments.
+
+Container Analysis associates metadata to images through notes and ocurrences. To learn more about these concepts, see the [metadata storage page](https://cloud.google.com/container-registry/docs/metadata-storage). The service also performs vulnerability scans for new images pushed to Container Registry.
+
+Container Analysis scans new images when they're uploaded to Container Registry. This scan extracts information about the system packages in the container.
+
+Container Analysis scans images only once, based on the image's digest. This means that adding or modifying tags won't trigger new scans, only changing the contents of the image will.
+
+Container Analysis creates occurrences for vulnerabilities found when you upload the image. After the initial scan, it continuously monitors the metadata for scanned images in Container Registry for new vulnerabilities.
+
+As Container Analysis receives new and updated vulnerability information from vulnerability sources, it updates the metadata of the scanned images to keep it up-to-date, creating new vulnerability occurrences for new notes and deleting vulnerability occurrences that are no longer valid.
+
+Container Analysis API supports package vulnerability scanning for Linux distributions and obtains CVE data from the following sources:
+
+- Debian
+- Ubuntu
+- Alpine
+- Red Hat Enterprise Linux and CentOS
+
+Links:
+- <https://cloud.google.com/container-registry/docs/vulnerability-scanning>
+- <https://cloud.google.com/container-registry/docs/container-analysis>
 
 ## Services - Serverless
 

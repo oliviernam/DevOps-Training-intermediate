@@ -69,6 +69,8 @@ Amazon Elastic Container Registry (ECR) is a fully-managed Docker container regi
 
 ECR provides the ability to scan an image on push. The built in scanner is Clair. It looks pretty basic but does the trick. It is simple to navigate and sort in between the findings. There is no interval based rescanning available thougn.
 
+Link: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html>
+
 ### ECS
 
 Amazon Elastic Container Service (Amazon ECS) is a fully managed container orchestration service. Customers use ECS to run their most sensitive and mission critical applications because of its security, reliability, and scalability.

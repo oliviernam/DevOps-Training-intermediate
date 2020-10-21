@@ -84,7 +84,9 @@ Azure Container Registry is a managed, private Docker registry service based on 
 
 Use Azure container registries with your existing container development and deployment pipelines, or use Azure Container Registry Tasks to build container images in Azure. Build on demand, or fully automate builds with triggers such as source code commits and base image updates.
 
-Link: <https://docs.microsoft.com/en-in/azure/container-registry/>
+Links:
+- <https://docs.microsoft.com/en-in/azure/container-registry/>
+- <https://docs.microsoft.com/en-us/azure/security-center/defender-for-container-registries-introduction>
 
 ## Services - Serverless
 
@@ -215,7 +217,7 @@ stages:
       vmImage: $(vmImageName)
     steps:
     - task: Docker@2
-      displayName: Build an image
+      displayName: Build and push an image
       inputs:
         command: buildAndPush
         repository: $(imageRepository)
