@@ -241,7 +241,7 @@ We're going to upload sample files to the stores bucket. This is named `insekure
 
 ```sh
 export STORE_BUCKET=$(aws s3 ls | sed -n 's/.*\(insekures3.*\)/\1/p')
-aws s3 cp files/* s3://${STORE_BUCKET}/
+for f in kubernetes.* ; do aws s3 cp $f s3://${STORE_BUCKET}/$f ; done
 ```
 
 ### Access the Serverless Application
