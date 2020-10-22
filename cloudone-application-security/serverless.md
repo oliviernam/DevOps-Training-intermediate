@@ -8,16 +8,14 @@
     - [Install](#install)
     - [Create serverless AWS user](#create-serverless-aws-user)
     - [Create a Role for Lambda, S3, RDS](#create-a-role-for-lambda-s3-rds)
-    - [Configure Serverless](#configure-serverless)
-  - [Demoing Application Security with the Serverless InSekureStore](#demoing-application-security-with-the-serverless-insekurestore)
+  - [Deploy the Serverless InSekureStore](#deploy-the-serverless-insekurestore)
     - [Get the sources](#get-the-sources)
-    - [Lambda Layers for Application Security](#lambda-layers-for-application-security)
-    - [Modify the `variables.yml`](#modify-the-variablesyml)
+    - [Configure](#configure)
     - [Deploy](#deploy)
     - [Upload Some Files](#upload-some-files)
     - [Access the Serverless Application](#access-the-serverless-application)
     - [Remove the InSekureStore](#remove-the-insekurestore)
-  - [Cloud1 Application Security Configuration](#cloud1-application-security-configuration)
+  - [Cloud One Application Security Configuration](#cloud-one-application-security-configuration)
     - [Protection Policy](#protection-policy)
     - [SQL Injection Policy Configuration](#sql-injection-policy-configuration)
     - [Illegal File Access Policy Configuration](#illegal-file-access-policy-configuration)
@@ -125,17 +123,7 @@ Services in AWS, such as AWS Lambda, require that you provide credentials when y
 2. Without chaning anything, press `Next: Permissions`, `Next: Tags`, `Next: Review`.
 3. Set the Role name to `serverless-lambda-s3-role`, Press `Create` and note the ARN.
 
-### Configure Serverless
-
-#FIXME: I'm pretty sure that this is NOT required anymore
-
-Configure your Cloud9 AWS with the access keys of the just created serverless aws user
-
-```sh
-#aws configure
-```
-
-## Demoing Application Security with the Serverless InSekureStore
+## Deploy the Serverless InSekureStore
 
 ### Get the sources
 
@@ -156,13 +144,10 @@ custom:
 
 No changes required in `serverless.yml`, a few within `variables.yml`
 
-### Lambda Layers for Application Security
-
-We do require a python3_6 layer
-
-### Modify the `variables.yml`
+### Configure
 
 Open the `variables.yml` in the Cloud9 editor and set your Application Security key and secret, region and role.
+We're using a python3_6 layer with our custom runtime for this app.
 
 ```yaml
 # Cloud One Application Security Configs
@@ -188,36 +173,43 @@ serverless plugin install --name serverless-python-requirements
 Configure serverless AWS provider credentials
 
 ```sh
-serverless config credentials --provider aws --key <API KEY OF SERVERLESS USER CREATED ABOVE> --secret '<API SECRET KEY OF SERVERLESS USER CREATED ABOVE>' -o
+export AWS_KEY=<API KEY OF SERVERLESS USER CREATED ABOVE>
+export AWS_SECRET=<API SECRET KEY OF SERVERLESS USER CREATED ABOVE>
+serverless config credentials \
+  --provider aws \
+  --key ${AWS_KEY} \
+  --secret ${AWS_SECRET} \
+  -o
 ```
 
 And deploy
 
 ```sh
-serverless deploy --stage dev --aws-profile default
+serverless deploy
 ```
 
 If everything is successful you will get a link to your lambda driven web application.
 
 ```text
+...
 Service Information
 service: insekure-store
 stage: dev
 region: eu-central-1
 stack: insekure-store-dev
-resources: 76
+resources: 75
 api keys:
   None
 endpoints:
-  GET - https://3ovy8p00n9.execute-api.eu-central-1.amazonaws.com/dev/
-  GET - https://3ovy8p00n9.execute-api.eu-central-1.amazonaws.com/dev/{file}
-  POST - https://3ovy8p00n9.execute-api.eu-central-1.amazonaws.com/dev/is_valid
-  GET - https://3ovy8p00n9.execute-api.eu-central-1.amazonaws.com/dev/list
-  GET - https://3ovy8p00n9.execute-api.eu-central-1.amazonaws.com/dev/get_file
-  GET - https://3ovy8p00n9.execute-api.eu-central-1.amazonaws.com/dev/read_file
-  POST - https://3ovy8p00n9.execute-api.eu-central-1.amazonaws.com/dev/write_file
-  POST - https://3ovy8p00n9.execute-api.eu-central-1.amazonaws.com/dev/delete_file
-  POST - https://3ovy8p00n9.execute-api.eu-central-1.amazonaws.com/dev/auth
+  GET - https://ocwnfvuhg9.execute-api.eu-central-1.amazonaws.com/dev/
+  GET - https://ocwnfvuhg9.execute-api.eu-central-1.amazonaws.com/dev/{file}
+  POST - https://ocwnfvuhg9.execute-api.eu-central-1.amazonaws.com/dev/is_valid
+  GET - https://ocwnfvuhg9.execute-api.eu-central-1.amazonaws.com/dev/list
+  GET - https://ocwnfvuhg9.execute-api.eu-central-1.amazonaws.com/dev/get_file
+  GET - https://ocwnfvuhg9.execute-api.eu-central-1.amazonaws.com/dev/read_file
+  POST - https://ocwnfvuhg9.execute-api.eu-central-1.amazonaws.com/dev/write_file
+  POST - https://ocwnfvuhg9.execute-api.eu-central-1.amazonaws.com/dev/delete_file
+  POST - https://ocwnfvuhg9.execute-api.eu-central-1.amazonaws.com/dev/auth
 functions:
   index: insekure-store-dev-index
   static: insekure-store-dev-static
@@ -231,23 +223,26 @@ functions:
   db: insekure-store-dev-db
 layers:
   None
-
-Stack Outputs
-ServiceEndpoint: https://3ovy8p00n9.execute-api.eu-central-1.amazonaws.com/dev
-ServerlessDeploymentBucketName: insekure-store-dev-serverlessdeploymentbucket-dopk8qr47fi2
-
-Serverless: Run the "serverless" command to setup monitoring, troubleshooting and testing.
 ```
 
 Before accessing the app, you need to initialize the database
 
 ```sh
-serverless invoke -f db -l --aws-profile default
+serverless invoke -f db -l
+```
+
+```text
+"DB Migrated Sucessfully"
 ```
 
 ### Upload Some Files
 
-Within the AWS Console, go to S3 and find the bucket named `insekures3-SOMETHING` with `Public` access and upload some files there, e.g. the `kubernetes.png` and `kubernetes.txt` from the repo.
+We're going to upload sample files to the stores bucket. This is named `insekures3-`SOMETHING with `Public` access.
+
+```sh
+export STORE_BUCKET=$(aws s3 ls | sed -n 's/.*\(insekures3.*\)/\1/p')
+aws s3 cp files/* s3://${STORE_BUCKET}/
+```
 
 ### Access the Serverless Application
 
@@ -265,10 +260,10 @@ The first authentication can likely fail, since the database cluster might not b
 ### Remove the InSekureStore
 
 ```sh
-serverless remove --aws-profile default
+serverless remove
 ```
 
-## Cloud1 Application Security Configuration
+## Cloud One Application Security Configuration
 
 ### Protection Policy
 
@@ -331,4 +326,4 @@ or
 
 Within the details of a text file you will see the output of your command.
 
-*Application Security Protection by `Remote Command Execution`*
+*Application Security Protection by `Remote Command Execution` or `Malicious Payload`.*
