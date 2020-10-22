@@ -75,4 +75,4 @@ cd shell
 ./start.sh
 ```
 
-Otherwise use the cloud shells of the provides (beware of the timeouts!) or use you own environment.
+Otherwise use the cloud shells of the providers (pay attention to the timeouts!) or use you own environment.
