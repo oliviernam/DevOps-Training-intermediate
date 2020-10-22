@@ -39,7 +39,7 @@ After completing this training course participants will be able to:
 Agenda |
 ----- |
 **Day 1** |
-C1 ConformityDemoing |
+C1 Conformity Demoing |
 C1 File Storage Security Demoing |
 CI/CD w/ AWS CodePipeline & Demoing Application Security |
  |
