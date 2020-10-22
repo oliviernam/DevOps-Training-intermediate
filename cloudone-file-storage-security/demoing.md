@@ -481,7 +481,6 @@ aws lambda add-permission \
   --source-arn ${SCAN_RESULT_TOPIC_ARN}
 ```
 
-
 ## Demoing Promote or Quarantine
 
 Download the `eicar.com` and upload it to the scanning bucket.

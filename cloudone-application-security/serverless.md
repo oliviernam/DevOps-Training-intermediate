@@ -1,6 +1,7 @@
 # Serverless
 
 - [Serverless](#serverless)
+  - [Serverless Framework vs. Cloud Formation](#serverless-framework-vs-cloud-formation)
   - [Create a Workspace](#create-a-workspace)
   - [Install Node](#install-node)
   - [Update IAM Settings for the Workspace](#update-iam-settings-for-the-workspace)
@@ -27,7 +28,30 @@
 
 Here, we're going to deploy a fully Lambda driven web application on AWS. Of course, we'll protect it by CloudOne Application Security.
 
+## Serverless Framework vs. Cloud Formation
+
+Within this lab, we're going to use serverless which is a framework to manage serverless deployments. More information on the framework including examples are [here](https://www.serverless.com/) and [here](https://www.serverless.com/framework/docs/).
+
+To understand why there is something like serverless, let's compare it to the well known CloudFormation, which is an AWS tool for deploying infrastructure. You describe your desired infrastructure in YAML or JSON, then submit your CloudFormation template for deployment. It enables "infrastructure as code".
+
+The Serverless Framework provides a configuration domain-specific language (DSL) which is designed for serverless applications. It also enables infrastructure as code while removing a lot of the boilerplate required for deploying serverless applications, including permissions, event subscriptions, logging, etc.
+
+When deploying to AWS, the Serverless Framework is using CloudFormation under the hood. This means you can use the Serverless Framework's easy syntax to describe most of your Serverless Application while still having the ability to supplement with standard CloudFormation if needed.
+
+The Serverless Framework is provider-agnostic, so you can use it to deploy serverless applications to AWS, Microsoft Azure, Google Cloud Platform, or many other providers. This reduces lock-in and enables a multi-cloud strategy while giving you a consistent experience across clouds.
+
+Finally, the Serverless Framework assists with additional aspects of the serverless application lifecycle, including building your function package, invoking your functions for testing, and reviewing your application logs.
+
+All clear? :-)
+
+For later:
+
+- [Examples](https://www.serverless.com/examples/)
+- [Tutorial](https://www.serverless.com/blog/category/guides-and-tutorials/)
+
 ## Create a Workspace
+
+Since we now know what we're going to do, let's start over:
 
 - Select Create Cloud9 environment
 - Name it hoever you like, e.g. `serverless`
