@@ -36,19 +36,20 @@ After completing this training course participants will be able to:
 
 ### Agenda
 
-Agenda |
------ |
 **Day 1** |
-C1 Conformity Demoing |
-C1 File Storage Security Demoing |
+----- |
+C1 Conformity - Demoing |
+C1 File Storage Security - Demoing |
 CI/CD w/ AWS CodePipeline & Demoing Application Security |
- |
+
 **Day 2** |
-C1 Application Security Demoing Serverless Apps |
-C1 Container Control Admission-Controllers and Demoing |
+----- |
+C1 Application Security - Demoing Serverless Apps |
+C1 Container Control - Admission-Controllers and Demoing |
 CI/CD w/ Azure Pipelines |
- |
+
 **Day 3** |
+----- |
 MOADSD-NG - Use-Cases and Best Practices |
 C1 Smart Check - Reporting, Deployment Scripts |
 CI/CD w/ GCP Cloud Build |
