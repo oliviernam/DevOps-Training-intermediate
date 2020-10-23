@@ -1,5 +1,20 @@
 # Container Security Demoing
 
+- [Container Security Demoing](#container-security-demoing)
+  - [If you need a cluster...](#if-you-need-a-cluster)
+  - [Explore](#explore)
+  - [Demo Namespace Exclusions](#demo-namespace-exclusions)
+  - [Appendix](#appendix)
+    - [Nginx with three Replicas](#nginx-with-three-replicas)
+
+## If you need a cluster...
+
+Run the script `rapid-gke.sh` from within a shell, authenticated to GCP. The script is here: 
+
+```sh
+../cloud-gcp/rapid-gke.sh
+```
+
 ## Explore
 
 ```sh

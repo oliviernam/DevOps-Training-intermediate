@@ -199,6 +199,7 @@ Configure serverless AWS provider credentials
 ```sh
 export AWS_KEY=<API KEY OF SERVERLESS USER CREATED ABOVE>
 export AWS_SECRET=<API SECRET KEY OF SERVERLESS USER CREATED ABOVE>
+
 serverless config credentials \
   --provider aws \
   --key ${AWS_KEY} \
@@ -350,4 +351,4 @@ or
 
 Within the details of a text file you will see the output of your command.
 
-*Application Security Protection by `Remote Command Execution` or `Malicious Payload`.*
+*Application Security Protection by `Remote Command Execution` or `Malicious Payload`.
