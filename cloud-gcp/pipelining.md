@@ -88,7 +88,6 @@ gcloud projects create ${PROJECT_ID} --name devops-training
 Set up some variables.
 
 ```sh
-#$(gcloud info --format='value(config.project)')
 export ZONE=europe-west2-b
 export CLUSTER=gke-deploy-cluster
 ```
