@@ -20,3 +20,15 @@ Tested with
 * Linux,
 * Mac OS X with *Docker for Desktop* and
 * AWS Cloud9
+
+## How to use
+
+**Note:** If you are using a Mac and iCloud Drive, you should move the shell folder to a location *not* within the scope if iCloud Drive. This is not mandatory but recommended.
+
+Build and run it:
+
+```shell
+cd shell
+./build.sh
+./start.sh
+```
