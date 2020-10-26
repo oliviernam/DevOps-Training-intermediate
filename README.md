@@ -49,27 +49,27 @@ After completing this training course participants will be able to:
 
 **Day 1** |
 ----- |
-C1 Conformity - Demoing |
-C1 File Storage Security - Demoing |
-CI/CD w/ AWS CodePipeline & Demoing Application Security |
+[C1 Conformity](./cloudone-conformity/README.md) - Demoing |
+[C1 File Storage Security](./cloudone-file-storage-security/README.md) - Demoing |
+[AWS Pipelining](./cloud-aws/README.md) - CI/CD w/ AWS CodePipeline & Demoing Application Security |
 
 **Day 2** |
 ----- |
-C1 Application Security - Demoing Serverless Apps |
-C1 Container Control - Admission-Controllers and Demoing |
-CI/CD w/ Azure Pipelines |
+[C1 Application Security](./cloudone-application-security/README.md) - Demoing Serverless Apps |
+[C1 Container Control](./cloudone-container-control/README.md) - Admission-Controllers and Demoing |
+[Azure Pipeliing](./cloud-azure/README.md) - CI/CD w/ Azure Pipelines |
 
 **Day 3** |
 ----- |
-MOADSD-NG - Use-Cases and Best Practices |
-C1 Smart Check - Reporting, Deployment Scripts |
-CI/CD w/ GCP Cloud Build |
+[MOADSD-NG](./moadsd-ng/README.md) - Use-Cases and Best Practices |
+[Smart Check](./cloudone-smart-check/README.md) - Reporting, Deployment Scripts |
+[GCP Pipelining](./cloud-gcp/README.md) - CI/CD w/ GCP Cloud Build |
 
 ## Before you start
 
 ### 1. Clone the DevOps Training Material
 
-Do this by starting a terminal (I do prefer iTerm2 :-)), change to your usual develop folder (which you hopefully have) and do a
+Do this by starting a terminal (I do prefer iTerm2 :-)). Then change to your usual develop folder (which you hopefully have) and do a
 
 ```shell
 git clone https://github.com/mawinkler/devops-training.git
@@ -78,7 +78,7 @@ cd devops-training
 
 ### 2. (Optional) Create your Multi Cloud Shell Container
 
-If you want to have your shell locally, you can simply use the Multi Cloud Shell Container environment which has all the required tools prepopulated for you.
+If you want to have your shell locally, you can simply use the *Multi Cloud Shell* Container environment which has all the required tools prepopulated for you.
 
 **Note:** If you are using a Mac and iCloud Drive, you should move the shell folder to a location *not* within the scope if iCloud Drive. This is not mandatory but recommended.
 
