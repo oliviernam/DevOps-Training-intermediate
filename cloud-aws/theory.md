@@ -3,10 +3,12 @@
 - [AWS Theory](#aws-theory)
   - [Services - Container](#services---container)
     - [EKS](#eks)
-    - [ECR](#ecr)
     - [ECS](#ecs)
+      - [ECS vs. EKS](#ecs-vs-eks)
+    - [ECR](#ecr)
     - [Fargate](#fargate)
   - [Services - Serverless](#services---serverless)
+    - [Lambda](#lambda)
   - [Services - DevOps](#services---devops)
     - [CodeCommit](#codecommit)
     - [CodeArtifact](#codeartifact)
@@ -63,21 +65,66 @@ This secure and highly-available configuration makes Amazon EKS reliable and rec
 
 Learn more: <https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html>
 
-### ECR
-
-Amazon Elastic Container Registry (ECR) is a fully-managed Docker container registry that makes it easy for developers to store, manage, and deploy Docker container images. Amazon ECR is integrated with Amazon Elastic Container Service (ECS), simplifying your development to production workflow. Amazon ECR eliminates the need to operate your own container repositories or worry about scaling the underlying infrastructure. Amazon ECR hosts your images in a highly available and scalable architecture, allowing you to reliably deploy containers for your applications. Integration with AWS Identity and Access Management (IAM) provides resource-level control of each repository. 
-
-ECR provides the ability to scan an image on push. The built in scanner is Clair. It looks pretty basic but does the trick. It is simple to navigate and sort in between the findings. There is no interval based rescanning available thougn.
-
-Link: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html>
-
 ### ECS
 
-Amazon Elastic Container Service (Amazon ECS) is a fully managed container orchestration service. Customers use ECS to run their most sensitive and mission critical applications because of its security, reliability, and scalability.
+Amazon Elastic Container Service (Amazon ECS) is a fully managed container orchestration service.
 
 ECS is a great choice to run containers for several reasons. First, you can choose to run your ECS clusters using AWS Fargate, which is serverless compute for containers. Fargate removes the need to provision and manage servers, lets you specify and pay for resources per application, and improves security through application isolation by design. Second, ECS is used extensively within Amazon to power services such as Amazon SageMaker, AWS Batch, Amazon Lex, and Amazon.com’s recommendation engine, ensuring ECS is tested extensively for security, reliability, and availability.
 
 Additionally, because ECS has been a foundational pillar for key Amazon services, it can natively integrate with other services such as Amazon Route 53, Secrets Manager, AWS Identity and Access Management (IAM), and Amazon CloudWatch providing you a familiar experience to deploy and scale your containers. ECS is also able to quickly integrate with other AWS services to bring new capabilities to ECS. For example, ECS allows your applications the flexibility to use a mix of Amazon EC2 and AWS Fargate with Spot and On-Demand pricing options. ECS also integrates with AWS App Mesh, which is a service mesh, to bring rich observability, traffic controls and security features to your applications. ECS has grown rapidly since launch and is currently launching 5X more containers every hour than EC2 launches instances.
+
+#### ECS vs. EKS
+
+Understanding Amazon ECS
+
+- Applications can be deployed as tasks which are Docker containers running on EC2 instances.
+- Applications can be defined using task definitions written in JSON. Tasks can be scaled up or down manually.
+- ECS control plane's high availability is taken care of by Amazon. Requests can be load-balanced to multiple tasks using ELB.
+- Rolling updates are supported using “minimumHealthyPercent” and “maximumPercent” parameters.
+- ECS provides health checks using CloudWatch.
+- Storage support is limited. EBS volumes can be specified by using ECS task definitions and connect to container instances.
+- ECS is supported in a VPC, which can include multiple subnets in multiple AZs.
+- ECS has been scaled-up to over 1000 container nodes without noticeable performance degradation.
+
+Understanding Kubernetes
+
+- Applications can be deployed using a combination of pods, deployments, and services.
+- The application tier is known as pod which is specified using YAML. The scaling can be manual or automated.
+- Pods are exposed through a service, which can be used as a load-balancer within the cluster. Load-balanced services detect unhealthy pods and remove them by providing high availability to K8s.
+- A deployment supports both “rolling-update” and “recreate” strategies.
+- Kubernetes provides two different health checks. Liveness (is app responsive) and Readiness (is app responsive, but busy preparing and not yet able to serve).
+- Kubernetes offers several types of persistent volumes with block or file support. It facilitates two storage APIs — The first provides abstractions for individual storage backends (e.g. NFS, AWS EBS, Ceph, Flocker). The second provides an abstraction for a storage resource request (e.g. 8 Gb).
+- The networking model is a flat network, enabling all pods to communicate with one another.
+- Kubernetes scales to 5,000-node clusters. Multiple clusters can be used to scale beyond this limit.
+
+Features specific to Amazon ECS
+
+- Offers seamless integration between containers and other AWS services — Assigning IAM roles to each container, Registering containers at application load balancers, Scaling EC2 instances based on cluster usage, Collecting logs (Cloudwatch Logs), etc.
+- Containers can only be deployed on Amazon, and ECS can only manage containers that it has created.
+- External storage is limited to Amazon, including Amazon EBS.
+- Validated within Amazon. ECS is not publicly available for deployment outside Amazon.
+- Single vendor control allows for accountability with bug fixes and better coordination with feature development.
+
+Features specific to Kubernetes
+
+- Distributing clusters among multiple zones, Scaling the cluster based on usage, Providing persistent disks for containers.
+- Can be deployed on-premises, private clouds, and public clouds.
+- Wide variety of storage options, including on-premises SANs and public clouds.
+- Deployed at scale more often among organizations. Kubernetes is also backed by enterprise offerings from both Google (GKE) and RedHat (OpenShift).
+- Installation is complex and there’s a bit of a learning curve.
+
+Links:
+
+- [ECS vs. EKS #1](https://skyscrapers.eu/insights/ecs-vs-eks)
+- [ECS vs. EKS #2](https://cloud.netapp.com/blog/aws-ecs-vs-kubernetes-an-unfair-comparison)
+
+### ECR
+
+Amazon Elastic Container Registry (ECR) is a fully-managed Docker container registry that makes it easy for developers to store, manage, and deploy Docker container images. Amazon ECR is integrated with Amazon Elastic Container Service (ECS), simplifying your development to production workflow. Amazon ECR eliminates the need to operate your own container repositories or worry about scaling the underlying infrastructure. Amazon ECR hosts your images in a highly available and scalable architecture, allowing you to reliably deploy containers for your applications. Integration with AWS Identity and Access Management (IAM) provides resource-level control of each repository. 
+
+ECR provides the ability to scan an image on push. The built in scanner is Clair. It looks pretty basic but does the trick. It is simple to navigate and sort in between the findings. There is no interval based rescanning available though.
+
+Link: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html>
 
 ### Fargate
 
@@ -86,6 +133,12 @@ AWS Fargate is a serverless compute engine for containers that works with both A
 Fargate allocates the right amount of compute, eliminating the need to choose instances and scale cluster capacity. You only pay for the resources required to run your containers, so there is no over-provisioning and paying for additional servers. Fargate runs each task or pod in its own kernel providing the tasks and pods their own isolated compute environment. This enables your application to have workload isolation and improved security by design. This is why customers such as Vanguard, Accenture, Foursquare, and Ancestry have chosen to run their mission critical applications on Fargate.
 
 ## Services - Serverless
+
+### Lambda
+
+AWS Lambda is a serverless compute service that runs your code in response to events and automatically manages the underlying compute resources for you. You can use AWS Lambda to extend other AWS services with custom logic, or create your own back-end services that operate at AWS scale, performance, and security. AWS Lambda can automatically run code in response to multiple events, such as HTTP requests via Amazon API Gateway, modifications to objects in Amazon S3 buckets, table updates in Amazon DynamoDB, and state transitions in AWS Step Functions.
+
+Lambda runs your code on high-availability compute infrastructure and performs all the administration of the compute resources, including server and operating system maintenance, capacity provisioning and automatic scaling, code and security patch deployment, and code monitoring and logging. All you need to do is supply the code.
 
 ## Services - DevOps
 
@@ -126,8 +179,8 @@ CodeBuild provides these benefits:
 
 1. As input, you must provide CodeBuild with a build project. A build project includes information about how to run a build, including where to get the source code, which build environment to use, which build commands to run, and where to store the build output. A build environment represents a combination of operating system, programming language runtime, and tools that CodeBuild uses to run a build. For more information, see:
 
-   - Create a build project
-   - Build environment reference
+   - [Create a build project](https://docs.aws.amazon.com/codebuild/latest/userguide/getting-started-create-build-project-console.html)
+   - [Build environment reference](https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html)
 
 2. CodeBuild uses the build project to create the build environment.
 3. CodeBuild downloads the source code into the build environment and then uses the build specification (buildspec), as defined in the build project or included directly in the source code. A buildspec is a collection of build commands and related settings, in YAML format, that CodeBuild uses to run a build. For more information, see the Buildspec reference.
