@@ -7,7 +7,7 @@
 
 ## Objective
 
-This folder dows contain some scripts to ease a Smart Check deployment in different environments. The deployment scripts are all capable of doing the initially required password change.
+This folder does contain some scripts to ease a Smart Check deployment in different environments. The deployment scripts are all capable of doing the initially required password change.
 
 Please use `deploy-dns.sh` when the load balancer in the target environment uses a public DNS name (e.g. in AWS).
 
@@ -35,8 +35,11 @@ The script `deploy-cpw.sh` requires the additional variable `DSSC_HOST` to be se
 
 ## Files
 
-- [Lab](./pipelining.md)
-- [Theory](./theory.md)
+The file `values.yml` does contain all possible settings for a Smart Check deployment as of version 1.2.51. The file got created with the following command:
+
+```sh
+helm inspect values https://github.com/deep-security/smartcheck-helm/archive/1.2.51.tar.gz > values.yml
+```
 
 During the cloud-labs, the following deploy-scripts are used:
 

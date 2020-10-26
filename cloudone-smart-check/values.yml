@@ -302,6 +302,17 @@ db:
   ## Default value: 5432
   port: 5432
 
+  ## PostgreSQL Database connection pool configuration
+  ## maxIdleConnections - the limit of the number of idle connections in the pool. Default Value: 25
+  maxIdleConnections:
+  ## maxIdleConnections - the limit of the number of open connections in the pool.  Default Value: 25
+  maxOpenConnections:
+  ## connMaxLifetime - the maximum amount of time a connection may be reused. It is expressed as a duration string.
+  ##                   A duration string is a sequence of decimal numbers, each with optional fraction
+  ##                   and a unit suffix, such as "24h". Valid time units are "ns", "us", "ms", "s", "m", "h".
+  ##                   Default Value: "10m"
+  connMaxLifetime:
+
   tls:
     ## mode:
     ## * disable - No SSL
@@ -328,7 +339,6 @@ db:
         configMapKeyRef:
           name:
           key:
-
   ## Application database user
   ##
   ## Default value: a generated value derived from the `auth.secretSeed` and system details
@@ -465,7 +475,7 @@ images:
 
     ## Default tag for images to pull. This can be overridden for each image
     ## by specifying the tag attribute at the image level.
-    tag: 1.2.48
+    tag: 1.2.51
 
     ## Default pull policy for images. This can be overridden for each image
     ## by specifying the pullPolicy attribute at the image level.
@@ -480,28 +490,28 @@ images:
     # imagePullSecret:
   db:
     repository: db
-    digest: sha256:cbaed95415961760067132ae42315542720a02d4d6137d11196f548c6749ed38
+    digest: sha256:381445b393fd781b31cc467e376c398d9b87c20e12c6250b0bf277876affeb05
   auth:
     repository: auth
-    digest: sha256:b7ecad5961951c58d47019a8262aecd18c951d2487888433844446eb3188d879
+    digest: sha256:67a6273535482bd17855f64d1decee64782b821e467b93939bdcb6de3923bb0a
   malwareScan:
     repository: vscan
-    digest: sha256:0e74f6fa00a3ebda5ccb840085076dccf9bf94e8cfe84635fc8282272169793d
+    digest: sha256:b78c0dc132f14a68f3db3814881ca100a52128cb3db3ac450ee59b9dd9681197
   contentScan:
     repository: contentscan
     digest: sha256:94c0938d03929f36e8f2279daf6c1a7e311f53ecb5c84293681a325eaedb7816
   scan:
     repository: scan
-    digest: sha256:1cefb842e1e569e4a5b97b315e8f445ade358fecdba71b0098a79077478a0ef4
+    digest: sha256:4204b8dcca217f75db91f0c0a352e0e8a3b1c6173c918a4313e0ec23fe3eea6c
   registryviews:
     repository: registryviews
-    digest: sha256:1e1b16d9d9a55e33528750af5d5bfd48f9da2ab24258412c4222b55592ca0234
+    digest: sha256:e30ca47976c1fecacff848406baa95058d2614914ab027965e91c1ed32cb0051
   docs:
     repository: api-docs
-    digest: sha256:315259831a437da3106a8fd1468e3fc272890837dd377dad6eb81de0bc51370c
+    digest: sha256:0258ec8a1353f688e42acf756660f9efd0879814bd1bffcd12fc9bc3a6230a5a
   frontend:
     repository: frontend
-    digest: sha256:7e07c5ae1e530634f732a9df684b477ad1c35017b9a02c80e24c1e80239cbbb0
+    digest: sha256:e8651afe8d887bef194e0250df1af4e88a6eb9a0d5030b05faec8b8ea121f781
   proxy:
     repository: proxy
     digest: sha256:e16b33d83951a833e4165ff6d43cfcebc26eb88a7faca1af06ea1132f7ae1953
@@ -510,41 +520,41 @@ images:
     digest: sha256:a2ff17649c73086a393a83ea76088a44d6860d06900cac090fc5eef528b9ed76
   vulnerabilityScan:
     repository: vulnerability-scan
-    digest: sha256:6fa28091bbe876a37e45ac8922696f788c5e9d1f145b694e5332d82560eaa944
+    digest: sha256:0adb9ca29b23644a29459d810a101618812ba5b626c16173d13c49363ae565db
   tasks:
     repository: tasks
     digest: sha256:a507f0b72be51fb746c8280724db57fd532957586a5107f00de5881e362170ca
   metrics:
     repository: k8s-metrics-reporter
-    digest: sha256:c5c30ec4a73d44aa8cd5e1f60f96baaa57a3d88c142779a30d4c18c4df8cdb47
+    digest: sha256:76e283bd6431f0cebb6f52d021a8897a05c2f0b630636907928eddccfa113c2c
   openscapScan:
     repository: openscap-scan
-    digest: sha256:8bbb0c71fc8efb9acf97817acec24fd4ec866cf37f42f67f486f3713ea6de40c
+    digest: sha256:1a418737f99a31a570f1b6334fcd1a2bff96e3aa67e2823d43cd1523e6dfb2b7
   openscapFeedConsumer:
     repository: openscap-feed-consumer
-    digest: sha256:5ff9f4f1a3a026dc99b0966667a1a007d84913c8b9daa0afe07908517f7b8b97
+    digest: sha256:1604e42006f4c6c1183405051ba4e4720fe54586060535d9963d41a8bc96654c
   registry:
     repository: registry
-    digest: sha256:6916f44b3aee478154f36ce401548363a644e907fd1791b69cf975ca2d67bef9
+    digest: sha256:eff8f510098b5b8ebc422dcf9ca051c35fcea62817df9bdc575af65cdbc96117
   registryCleaner:
     repository: registry-cleaner
     digest: sha256:b56aafaf360753a60d12b0a7fd756d11fd3dfb4fa67e81f48ba37d9c6264d1b8
   dbInitializer:
     repository: db-initializer
-    digest: sha256:97e1f38507fac7a4fde5ce6fe0d9ccb1c51deadd98ed0ef2aabdea1ef3678ec1
+    digest: sha256:e6d9135c9ba389202d09386ce6c2a87011a0369c4f7a17d273f50ab38745a597
   vulnDBInitializer:
     repository: vuln-db-initializer
-    digest: sha256:f600f7c660a82bdc368b8af2558d9d52e85eb0e79999e680ccfcc9036483c755
+    digest: sha256:33a8bc7e78abb5bb885fc248ea1a2614ab56a0a5ed8d4fa8dd2d90c644291081
   imageScan:
     repository: image-scan
-    digest: sha256:3da0578348aaa067aa0edf15f6ec4fe83e6075d08c00f4e46e65f4360d97fad0
+    digest: sha256:b1566f1c0d739723d34e29cb8e754b75d31fc902b2cf219691e0efde8b6f98eb
   scaScan:
     repository: sca-scan
-    digest: sha256:af31f60895c65a85a4fabbd11ee0d9a26bd8287ba3ec902f07702c32b6595a8d
+    digest: sha256:558be692f0740504a4afa1a971910a8e8f6939c43f29d21b0a171c4fc24a7b31
   scaFeedConsumer:
     repository: sca-feed-consumer
 
-    digest: sha256:317cad14e7562df34d71183eabb7dde5a704ccedf3fc86f79c02a7c64704d396
+    digest: sha256:f0af3d75f0c65d1b84aae509616e2d0835d57aac4752e1a73b607fc93627de31
 replicas: {}
 
 persistence:
