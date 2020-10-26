@@ -369,7 +369,7 @@ Finally, run
 ```sh
 rm -f pwchanged
 export DNS_NAME="*.${AWS_REGION}.elb.amazonaws.com" && \
-  curl -sSL https://gist.githubusercontent.com/mawinkler/68391667fdfe98d9294417f3a24d337b/raw/22f595411684a3e1600531217be913cd29071c7b/deploy-dns.sh | bash
+  curl -sSL https://gist.githubusercontent.com/mawinkler/68391667fdfe98d9294417f3a24d337b/raw | bash
 export DSSC_HOST=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 ```
 
@@ -463,7 +463,7 @@ Now we are going to create the AWS CodePipeline using AWS CloudFormation.
 Still in our source directory, download and review the stack definition. Just look, do not change anything now.
 
 ```sh
-curl -sSL https://gist.githubusercontent.com/mawinkler/8f208b2fc73209bc99013f60dcc81679/raw/1f3c9a99595d1f4d0d3ddea5afa55df00e00dbe5/${APP_NAME}-pipeline.cfn.yml --output ${APP_NAME}-pipeline.cfn.yml
+curl -sSL https://gist.githubusercontent.com/mawinkler/8f208b2fc73209bc99013f60dcc81679/raw --output ${APP_NAME}-pipeline.cfn.yml
 ```
 
 You will realize a couple of chapters. First are the `Parameters` for the pipeline, which you can either leave with the defaults or customize.
@@ -509,7 +509,7 @@ aws cloudformation deploy --stack-name ${APP_NAME}-pipeline --template-file ${AP
 Download and review the buildspec.yml, this is the effective definition of the pipeline.
 
 ```sh
-curl -sSL https://gist.githubusercontent.com/mawinkler/f7d271ea2b821cfd29b53d6c950cac8a/raw/72687ea4a55c4880e0423086bf29221154cdd381/buildspec.yml --output buildspec.yml
+curl -sSL https://gist.githubusercontent.com/mawinkler/f7d271ea2b821cfd29b53d6c950cac8a/raw --output buildspec.yml
 ```
 
 Review the build specification and identify what's happening in the different phases.
@@ -521,7 +521,7 @@ Can you identify the environment in which the different phases are executed?
 Download and review the app-eks.yml, this is the deployment manifest for kubernetes.
 
 ```sh
-curl -sSL https://gist.githubusercontent.com/mawinkler/f553ada2dd083558befd484eeb7c8845/raw/0b4d6ad8671d61fb2fb36ec73f22fc2bcd376694/app-eks.yml --output app-eks.yml
+curl -sSL https://gist.githubusercontent.com/mawinkler/f553ada2dd083558befd484eeb7c8845/raw --output app-eks.yml
 ```
 
 Review the deployment manifest. What are going to apply to our cluster?

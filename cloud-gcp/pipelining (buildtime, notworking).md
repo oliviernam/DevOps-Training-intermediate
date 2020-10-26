@@ -59,13 +59,7 @@ export DSSC_REG_HOST=$(gcloud compute addresses describe smartcheck-registry-add
 To deploy Smart Check as a NodePort service, run
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-np.sh | bash
-```
-
-or
-
-```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-np.sh | bash
+curl -sSL https://gist.githubusercontent.com/mawinkler/5421b398d4f46073f5f854d0485987bc/raw | bash
 ```
 
 But beware, Smart Check will not be accessible via the internet as of now, since we deployed it as a NodePort service only.
@@ -204,15 +198,7 @@ The certificate status should change to `Active` after some time.
 Finally, run
 
 ```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | bash
-export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-export DSSC_HOST="https://smartcheck-${DSSC_HOST_IP//./-}.nip.io"
-```
-
-or
-
-```shell
-curl -sSL https://raw.githubusercontent.com/mawinkler/deploy/master/deploy-ip.sh | bash
+curl -sSL https://gist.githubusercontent.com/mawinkler/7b9cc48a8b2cf96e07e4eadd6e8e9497/raw | bash
 export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 export DSSC_HOST="https://smartcheck-${DSSC_HOST_IP//./-}.nip.io"
 ```

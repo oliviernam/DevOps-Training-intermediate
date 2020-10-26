@@ -230,7 +230,7 @@ export DSSC_HOST=$(gcloud compute addresses describe smartcheck-address --global
 To deploy Smart Check as a NodePort service, run
 
 ```sh
-curl -sSL https://gist.githubusercontent.com/mawinkler/5421b398d4f46073f5f854d0485987bc/raw/4845fc1914f0cd9aa1337942e541a7e4976dfab5/deploy-np.sh | bash
+curl -sSL https://gist.githubusercontent.com/mawinkler/5421b398d4f46073f5f854d0485987bc/raw | bash
 ```
 
 But beware, Smart Check will not be accessible via the internet as of now, since we deployed it as a NodePort service only.
@@ -327,7 +327,7 @@ To finalize the setup of Smartcheck and do the initial password change run
 
 ```sh
 rm -f pwchanged
-curl -sSL https://gist.githubusercontent.com/mawinkler/9a64134f1398d09f69e6c8549cf80755/raw/a239e523ed4b317cfdf6b3250d62cdaa7e1a622d/deploy-cpw.sh | bash
+curl -sSL https://gist.githubusercontent.com/mawinkler/9a64134f1398d09f69e6c8549cf80755/raw | bash
 ```
 
 Next, we add the Google Container Registry to Smart Check.
@@ -521,7 +521,7 @@ Lastly, we create the heart of the pipeline, the `cloudbuild.yaml`.
 Still in our source directory, download and review the pipeline definition. Just look, do not change anything now.
 
 ```sh
-curl -sSL https://gist.githubusercontent.com/mawinkler/81f7f124e445c7f34d06b2d84b0ae81a/raw/b312606b1f4fe28f9e5b6c33406f9d3dfe0f4520/cloudbuild.yaml --output cloudbuild.yaml
+curl -sSL https://gist.githubusercontent.com/mawinkler/81f7f124e445c7f34d06b2d84b0ae81a/raw --output cloudbuild.yaml
 ```
 
 Populate the paramenters.

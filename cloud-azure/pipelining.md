@@ -132,7 +132,7 @@ Finally, run
 
 ```sh
 rm -f pwchanged
-curl -sSL https://gist.githubusercontent.com/mawinkler/7b9cc48a8b2cf96e07e4eadd6e8e9497/raw/aa9361ee163e584874f1ced3f65a9d76c63214b0/deploy-ip.sh | bash
+curl -sSL https://gist.githubusercontent.com/mawinkler/7b9cc48a8b2cf96e07e4eadd6e8e9497/raw | bash
 export DSSC_HOST_IP=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 export DSSC_HOST="smartcheck-${DSSC_HOST_IP//./-}.nip.io"
 ```
