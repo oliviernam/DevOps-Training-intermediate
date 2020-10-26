@@ -7,7 +7,7 @@
 
 ## Lab Objective
 
-The AWS Pipeline Lab will guides you step-by-step through the process of setting up a CI/CD-Pipeline with the AWS native services and tools. You're integrating Smart Check pre-registry scanning and Cloud One Application Security into the pipeline.
+The AWS Pipeline Lab will guide you step-by-step through the process of setting up a CI/CD-Pipeline with the AWS native services and tools. You're integrating Smart Check pre-registry scanning and Cloud One Application Security into the pipeline.
 
 ## Prerequisites
 
