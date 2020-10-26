@@ -28,16 +28,7 @@
 
 The MOADSD-NG project does provide a simple way to setup a hybrid cloud security demo, playground and learning environment within the clouds or alternatively on a local ESXi (no vCenter required). Core technologies used (besides of Trend Micro solutions) are the cloud native virtualization functionalities, a full-blown Kubernetes cluster with cluster storage and release management tools (Jenkins / GitLab). Ansible, the de facto most used orchestration tool, is used for the whole life-cycle of your MOADSD-NG environment.
 
-In this lab, we will discuss how to setup MOADSD-NG and go over some basics of how to use the environment. We will get in touch with lots of technologies we learned about in the previous parts of the training. That includes:
-
-- JSON / YAML
-- API
-- Ansible
-- Python
-- Kubernetes
-- Docker
-
-Our goal is to get a Jenkins driven pipeline up and running, including in the deployment of an application on Kubernetes. Effectively, we’re going to put the things together :-)
+In this lab, we will discuss how to setup MOADSD-NG and go over some basics of how to use the environment. Our goal is to get a Jenkins driven pipeline up and running, including the deployment of an application on Kubernetes.
 
 ## Requirements
 

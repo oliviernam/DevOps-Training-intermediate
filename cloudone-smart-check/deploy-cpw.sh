@@ -4,8 +4,6 @@ set -e
 
 printf '%s' "Get Cloud One Smart Check load balancer IP"
 
-DSSC_HOST=$(gcloud compute addresses describe smartcheck-address --global | sed -n 's/address: \(.*\)/\1/p')
-
 printf ' - %s\n' "${DSSC_HOST}"
 
 if [ ! -f ~/pwchanged ];

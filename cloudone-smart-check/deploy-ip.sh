@@ -2,11 +2,6 @@
 
 set -e
 
-# This script is meant for quick & easy install via:
-#   'curl -sSL https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | bash'
-# or:
-#   'wget -qO- https://raw.githubusercontent.com/mawinkler/devops-training/master/cloudone-image-security/deploy-ip.sh | bash'
-
 printf '%s' "Configure Cloud One Smart Check namespace"
 
 kubectl create namespace ${DSSC_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f - > /dev/null
