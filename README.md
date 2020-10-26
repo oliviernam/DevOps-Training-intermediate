@@ -1,5 +1,16 @@
 # DevOps Intermediate Training
 
+- [DevOps Intermediate Training](#devops-intermediate-training)
+  - [Course Description](#course-description)
+    - [Target Audience](#target-audience)
+    - [Prerequisites](#prerequisites)
+    - [Course Objectives](#course-objectives)
+    - [Training Topics](#training-topics)
+    - [Agenda](#agenda)
+  - [Before you start](#before-you-start)
+    - [1. Clone the DevOps Training Material](#1-clone-the-devops-training-material)
+    - [2. (Optional) Create your Multi Cloud Shell Container](#2-optional-create-your-multi-cloud-shell-container)
+
 ## Course Description
 
 The DevOps Intermediate Training is a three days instructor led course. Participants will learn how to demo Trend Micro Cloud One security services from a DevOps perspective. The course discusses automation using continuous integration and delivery (CI/CD) pipelines using AWS CodePipeline, Azure Pipelines and GCP Cloud Build. This course incorporates a variety of hands-on lab exercises, allowing participants to put the lesson content into action.
@@ -68,6 +79,8 @@ cd devops-training
 ### 2. (Optional) Create your Multi Cloud Shell Container
 
 If you want to have your shell locally, you can simply use the Multi Cloud Shell Container environment which has all the required tools prepopulated for you.
+
+**Note:** If you are using a Mac and iCloud Drive, you should move the shell folder to a location *not* within the scope if iCloud Drive. This is not mandatory but recommended.
 
 ```shell
 cd shell

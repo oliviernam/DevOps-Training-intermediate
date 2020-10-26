@@ -20,3 +20,11 @@ The GCP Pipeline Lab will guides you step-by-step through the process of setting
 
 - [Lab](./pipelining.md)
 - [Theory](./theory.md)
+
+During the lab you're downloading a file from my gists:
+
+`cloudbuild.yml`
+
+```sh
+curl -sSL https://gist.githubusercontent.com/mawinkler/81f7f124e445c7f34d06b2d84b0ae81a/raw --cloudbuild.yml
+```
