@@ -21,7 +21,7 @@ CloudOne File Storage Security is abbreviated by `FSS`
 - Have an AWS account
 - Have access to Cloud One File Storage Security
 
-Node: It is best to run the lab not from a machine, which has an anti malware agent installed.
+Note: It is best to run the lab not from a machine, which has an anti malware agent installed.
 
 ## Installation
 
