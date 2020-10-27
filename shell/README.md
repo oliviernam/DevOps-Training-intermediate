@@ -57,6 +57,15 @@ You likely need to increase the disk size of the Cloud9 instance depending on th
 ./resize.sh
 ```
 
+Now clone the devops-training
+
+```sh
+git clone https://github.com/mawinkler/devops-training.git
+cd devops-training
+```
+
+#### Default VPC
+
 Cloud9 requires a VPC with a public subnet available. If you don't have that within the desired region you need to create it before creating the Cloud9 instance.
 
 * Create a VPC
@@ -76,6 +85,8 @@ Cloud9 requires a VPC with a public subnet available. If you don't have that wit
 * Modify Route Table --> Routes --> Edit routes --> Add route
   * Destination 0.0.0.0/0
   * Target: cloud9-igw
+
+#### Boto
 
 Comment of 10/10/2020:
 
