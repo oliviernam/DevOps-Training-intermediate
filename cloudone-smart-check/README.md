@@ -22,7 +22,7 @@ Key | Value
 `DSSC_NAMESPACE` | e.g. `smartcheck`
 `DSSC_USERNAME` | e.g. `admin`
 `DSSC_PASSWORD`| e.g. `trendmicro`
-`DSSC_REGUSER` | e.g. `administrator`
+`DSSC_REGUSER` | e.g. `admin`
 `DSSC_REGPASSWORD` | e.g. `trendmicro`
 `DSSC_AC` | `<SMART CHECK ACTIVATION CODE>`
 
