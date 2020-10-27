@@ -18,8 +18,8 @@ Run the script `rapid-gke.sh` from within a shell, authenticated to GCP. The scr
 ## Explore
 
 ```sh
-k get ValidatingWebhookConfiguration
-k edit ValidatingWebhookConfiguration trendmicro-trendmicro-admission-controller
+kubectl get ValidatingWebhookConfiguration
+kubectl edit ValidatingWebhookConfiguration trendmicro-trendmicro-admission-controller
 
 helm inspect values https://github.com/trendmicro/cloudone-admission-controller-helm/archive/master.tar.gz
 ```
@@ -27,7 +27,7 @@ helm inspect values https://github.com/trendmicro/cloudone-admission-controller-
 If you're running MOADSD-NG and have OPA deployed, you can compare the webhooks. They look pretty similar, or?
 
 ```sh
-k edit ValidatingWebhookConfiguration opa-validating-webhook
+kubectl edit ValidatingWebhookConfiguration opa-validating-webhook
 ```
 
 ## Demo Namespace Exclusions
@@ -37,9 +37,9 @@ k edit ValidatingWebhookConfiguration opa-validating-webhook
 Create a namespace for nginx and try to deploy it
 
 ```sh
-k create ns nginx
+kubectl create ns nginx
 
-k run -n nginx --image=nginx --generator=run-pod/v1 nginx
+kubectl run -n nginx --image=nginx --generator=run-pod/v1 nginx
 ```
 
 The above should fail.
@@ -47,11 +47,11 @@ The above should fail.
 If you want to exclude a namespace from admission control, label it
 
 ```sh
-k label ns nginx ignoreAdmissionControl=true --overwrite
+kubectl label ns nginx ignoreAdmissionControl=true --overwrite
 
-k get ns --show-labels
+kubectl get ns --show-labels
 
-k run -n nginx --image=nginx --generator=run-pod/v1 nginx
+kubectl run -n nginx --image=nginx --generator=run-pod/v1 nginx
 ```
 
 ## Appendix
@@ -83,5 +83,5 @@ spec:
         - containerPort: 80
 EOF
 
-k apply -n nginx -f nginx.yml
+kubectl apply -n nginx -f nginx.yml
 ```
