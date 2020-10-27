@@ -51,12 +51,6 @@ From within the Cloud9 shell to a
 sudo apt install -y docker-compose
 ```
 
-You likely need to increase the disk size of the Cloud9 instance depending on the type you chose above. Execute:
-
-```sh
-./resize.sh
-```
-
 Now clone the devops-training
 
 ```sh
@@ -120,6 +114,17 @@ Build and run it:
 
 ```shell
 cd shell
+```
+
+You likely need to increase the disk size of the Cloud9 instance depending on the type you chose above. Execute:
+
+```sh
+./resize.sh
+```
+
+Now build and start
+
+```sh
 ./build.sh
 ./start.sh
 ```
