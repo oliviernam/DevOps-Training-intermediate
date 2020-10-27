@@ -21,9 +21,13 @@ CloudOne File Storage Security is abbreviated by `FSS`
 - Have an AWS account
 - Have access to Cloud One File Storage Security
 
+Node: It is best to run the lab not from a machine, which has an anti malware agent installed.
+
 ## Installation
 
-First, create a scanning bucket in the desired region:
+Having an environment up and running, first authenticate to your AWS subscription with `aws configure`.
+
+Next, create a scanning bucket in the desired region:
 
 ```sh
 export REGION=[YOUR DESIRED AWS REGION HERE]
