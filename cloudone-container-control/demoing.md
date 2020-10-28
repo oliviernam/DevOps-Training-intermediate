@@ -2,33 +2,78 @@
 
 - [Container Security Demoing](#container-security-demoing)
   - [If you need a cluster...](#if-you-need-a-cluster)
-  - [Explore](#explore)
+  - [Deploy Container Control](#deploy-container-control)
+  - [Demo Container Control with Smart Check](#demo-container-control-with-smart-check)
   - [Demo Namespace Exclusions](#demo-namespace-exclusions)
+  - [Explore](#explore)
   - [Appendix](#appendix)
     - [Nginx with three Replicas](#nginx-with-three-replicas)
 
 ## If you need a cluster...
 
-Run the script `rapid-gke.sh` from within a shell, authenticated to GCP. The script is here: 
+There are multiple ways to demo Container Control, whereby the variant with the greatest flexibility would be MOADSD-NG.
+If that is to heavy, you can quickly run the script `rapid-gke.sh` from within a shell, authenticated to GCP.
 
 ```sh
 ../cloud-gcp/rapid-gke.sh
 ```
 
-## Explore
+This will create a fresh cluster on GCP.
+
+## Deploy Container Control
+
+The deployment is typically a two step process:
+
+1. Deployment of the policy-based deployment controller
+2. Integration with Smart Check
+
+Follow the steps described [here](https://cloudone.trendmicro.com/docs/container-security/get-started/#install-the-policy-based-deployment-controller) and [here](https://cloudone.trendmicro.com/docs/container-security/get-started/#integrate-with-deep-security-smart-check).
+
+Then, create a policy (only one possible) for your cluster.
+
+Be very careful with the `Images that are not scanned` check box. You should check that, but you should monitor your cluster a little to see if blocked events show up. If that is the case, do the following:
+
+1. Identify the namespace(s) of the blocked pod(s)
+2. run `kubectl label ns <NAMESPACE> ignoreAdmissionControl=true --overwrite`
+
+If the Container Control turns quiet, you should be able to continue within the lab.
+
+## Demo Container Control with Smart Check
+
+Ensure to have the block rule `Images that are not scanned` applied to your Container Control policy
+
+Then, run a pod with an unchecked image, e.g.
 
 ```sh
-kubectl get ValidatingWebhookConfiguration
-kubectl edit ValidatingWebhookConfiguration trendmicro-trendmicro-admission-controller
+export TARGET_IMAGE=busybox
+export TARGET_IMAGE_TAG=latest
 
-helm inspect values https://github.com/trendmicro/cloudone-admission-controller-helm/archive/master.tar.gz
+kubectl create ns ${IMAGE}
+kubectl run -n ${IMAGE} --image=${IMAGE} --generator=run-pod/v1 nginx
 ```
 
-If you're running MOADSD-NG and have OPA deployed, you can compare the webhooks. They look pretty similar, or?
+This should lead to an an error in the console and an event in Container Security.
+
+Then let Smart Check scan the image
 
 ```sh
-kubectl edit ValidatingWebhookConfiguration opa-validating-webhook
+export DSSC_REGISTRY="<smart check preregistry url:port>"
+export DSSC_SERVICE="<smart check url:port>"
+export DSSC_USERNAME="<smart check username>"
+export DSSC_PASSWORD="<smart check password>"
+export DSSC_REGISTRY_USERNAME="<smart check preregistry username>"
+export DSSC_REGISTRY_PASSWORD="<smart check preregistry password>"
+
+./scan_image.sh
 ```
+
+Now, rerun
+
+```sh
+kubectl run -n ${IMAGE} --image=${IMAGE} --generator=run-pod/v1 nginx
+```
+
+It should now work, at least in regards the `Images that are not scanned`. It will eventually still be blocked depending on the other settings of your policy.
 
 ## Demo Namespace Exclusions
 
@@ -52,6 +97,21 @@ kubectl label ns nginx ignoreAdmissionControl=true --overwrite
 kubectl get ns --show-labels
 
 kubectl run -n nginx --image=nginx --generator=run-pod/v1 nginx
+```
+
+## Explore
+
+```sh
+kubectl get ValidatingWebhookConfiguration
+kubectl edit ValidatingWebhookConfiguration trendmicro-trendmicro-admission-controller
+
+helm inspect values https://github.com/trendmicro/cloudone-admission-controller-helm/archive/master.tar.gz
+```
+
+If you're running MOADSD-NG and have OPA deployed, you can compare the webhooks. They look pretty similar, or?
+
+```sh
+kubectl edit ValidatingWebhookConfiguration opa-validating-webhook
 ```
 
 ## Appendix
