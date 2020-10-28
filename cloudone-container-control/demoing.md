@@ -40,7 +40,7 @@ If the Container Control turns quiet, you should be able to continue within the 
 
 ## Demo Container Control with Smart Check
 
-Ensure to have the block rule `Images that are not scanned` applied to your Container Control policy
+Ensure to have the block rule `Images that are not scanned` applied to your Container Control policy.
 
 Then, run a pod with an unchecked image, e.g.
 
@@ -49,7 +49,7 @@ export TARGET_IMAGE=busybox
 export TARGET_IMAGE_TAG=latest
 
 kubectl create ns ${IMAGE}
-kubectl run -n ${IMAGE} --image=${IMAGE} --generator=run-pod/v1 nginx
+kubectl run -n ${IMAGE} --image=${IMAGE} --generator=run-pod/v1 ${IMAGE}
 ```
 
 This should lead to an an error in the console and an event in Container Security.
@@ -77,14 +77,16 @@ It should now work, at least in regards the `Images that are not scanned`. It wi
 
 ## Demo Namespace Exclusions
 
-*Configure Container Control policy to not allow unscanned images*
+Ensure to have the block rule `Images that are not scanned` applied to your Container Control policy, as above,
 
-Create a namespace for nginx and try to deploy it
+Create a namespace for a different pod and try to deploy it
 
 ```sh
-kubectl create ns nginx
+export TARGET_IMAGE=nginx
+export TARGET_IMAGE_TAG=latest
 
-kubectl run -n nginx --image=nginx --generator=run-pod/v1 nginx
+kubectl create ns ${IMAGE}
+kubectl run -n ${IMAGE} --image=${IMAGE} --generator=run-pod/v1 ${IMAGE}
 ```
 
 The above should fail.
@@ -92,14 +94,18 @@ The above should fail.
 If you want to exclude a namespace from admission control, label it
 
 ```sh
-kubectl label ns nginx ignoreAdmissionControl=true --overwrite
+kubectl label ns ${IMAGE} ignoreAdmissionControl=true --overwrite
 
 kubectl get ns --show-labels
 
-kubectl run -n nginx --image=nginx --generator=run-pod/v1 nginx
+kubectl run -n ${IMAGE} --image=${IMAGE} --generator=run-pod/v1 ${IMAGE}
 ```
 
+This should now work, because Container Control is ignoring the labeled namespace.
+
 ## Explore
+
+The potentially most interesting part on your cluster (in reagards Container Control) is the ValidatingWebhookConfiguration. Review and understand it.
 
 ```sh
 kubectl get ValidatingWebhookConfiguration
