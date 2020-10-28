@@ -92,7 +92,7 @@ az aks create \
     --generate-ssh-keys
 ```
 
-To configure kubectl to connect to your Kubernetes cluster, use the az aks get-credentials command. The following example gets credentials for the AKS cluster named appcluster in the ${APP_NAME} resource group:
+To configure kubectl to connect to your Kubernetes cluster, use the `az aks get-credentials` command. The following example gets credentials for the AKS cluster named appcluster in the `${APP_NAME}` resource group:
 
 ```sh
 az aks get-credentials --resource-group ${APP_NAME} --name ${CLUSTER_NAME}
@@ -148,7 +148,7 @@ export TREND_AP_SECRET=<YOUR CLOUD ONE APPLICATION SECURITY SECRET>
 
 ## Build the Azure Pipeline
 
-If you do not have an Azure DevOps Organization, sign in to Azure Pipelines <https://azure.microsoft.com/services/devops/pipelines>. After you sign in, your browser goes to <https://dev.azure.com/...> and displays your Azure DevOps dashboard.
+If you do not have an Azure DevOps Organization, [sign in](https://azure.microsoft.com/services/devops/pipelines) to Azure Pipelines. After you sign in, your browser goes to <https://dev.azure.com/...> and displays your Azure DevOps dashboard.
 
 If you already own an Azure DevOps Organization, go to <https://aex.dev.azure.com/> and select your organization.
 
@@ -209,7 +209,7 @@ Alongside to the project a git repo is automatically created.
 
 We are now going to fork the sample Kubernetes service so that we will be able modify the repository and trigger builds. If you already forked the repo because of another lab you did before, there's no need to do it again. In that case, simply continue with cloning it to your  shell.
 
-Login to GitHub and fork the Uploaders app:
+Login to GitHub and fork the Uploader app:
 <https://github.com/mawinkler/c1-app-sec-uploader>
 
 ### Populate the Azure Repository
