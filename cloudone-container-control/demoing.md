@@ -64,7 +64,26 @@ export DSSC_PASSWORD="<smart check password>"
 export DSSC_REGISTRY_USERNAME="<smart check preregistry username>"
 export DSSC_REGISTRY_PASSWORD="<smart check preregistry password>"
 
-./scan_image.sh
+docker pull ${TARGET_IMAGE}:${TARGET_IMAGE_TAG}
+
+docker run -v /var/run/docker.sock:/var/run/docker.sock \
+  deepsecurity/smartcheck-scan-action \
+  --image-name "${TARGET_IMAGE}:${TARGET_IMAGE_TAG}" \
+  --preregistry-host="${DSSC_REGISTRY}" \
+  --smartcheck-host="${DSSC_SERVICE}" \
+  --smartcheck-user="${DSSC_USERNAME}" \
+  --smartcheck-password="${DSSC_PASSWORD}" \
+  --insecure-skip-tls-verify \
+  --preregistry-scan \
+  --preregistry-user "${DSSC_REGISTRY_USERNAME}" \
+  --preregistry-password "${DSSC_REGISTRY_PASSWORD}"
+
+docker run mawinkler/scan-report:dev -O \
+  --name "${TARGET_IMAGE}" \
+  --image_tag "${TARGET_IMAGE_TAG}" \
+  --service "${DSSC_SERVICE}" \
+  --username "${DSSC_USERNAME}" \
+  --password "${DSSC_PASSWORD}" > report_${TARGET_IMAGE}.pdf
 ```
 
 Now, rerun
