@@ -89,7 +89,7 @@ docker run mawinkler/scan-report:dev -O \
 Now, rerun
 
 ```sh
-kubectl run -n ${IMAGE} --image=${IMAGE} --generator=run-pod/v1 nginx
+kubectl run -n ${IMAGE} --image=${IMAGE} --generator=run-pod/v1 ${IMAGE}
 ```
 
 It should now work, at least in regards the `Images that are not scanned`. It will eventually still be blocked depending on the other settings of your policy.
