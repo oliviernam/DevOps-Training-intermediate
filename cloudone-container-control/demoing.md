@@ -85,8 +85,8 @@ Then, run a pod with an unchecked image, e.g.
 export TARGET_IMAGE=busybox
 export TARGET_IMAGE_TAG=latest
 
-kubectl create ns ${IMAGE}
-kubectl run -n ${IMAGE} --image=${IMAGE} --generator=run-pod/v1 ${IMAGE}
+kubectl create ns ${TARGET_IMAGE}
+kubectl run -n ${TARGET_IMAGE} --image=${TARGET_IMAGE} --generator=run-pod/v1 ${TARGET_IMAGE}
 ```
 
 This should lead to an an error in the console and an event in Container Security.
@@ -126,7 +126,7 @@ docker run mawinkler/scan-report:dev -O \
 Now, rerun
 
 ```sh
-kubectl run -n ${IMAGE} --image=${IMAGE} --generator=run-pod/v1 ${IMAGE}
+kubectl run -n ${TARGET_IMAGE} --image=${TARGET_IMAGE} --generator=run-pod/v1 ${TARGET_IMAGE}
 ```
 
 It should now work, at least in regards the `Images that are not scanned`. It will eventually still be blocked depending on the other settings of your policy.
@@ -141,8 +141,8 @@ Create a namespace for a different pod and try to deploy it
 export TARGET_IMAGE=nginx
 export TARGET_IMAGE_TAG=latest
 
-kubectl create ns ${IMAGE}
-kubectl run -n ${IMAGE} --image=${IMAGE} --generator=run-pod/v1 ${IMAGE}
+kubectl create ns ${TARGET_IMAGE}
+kubectl run -n ${TARGET_IMAGE} --image=${TARGET_IMAGE} --generator=run-pod/v1 ${TARGET_IMAGE}
 ```
 
 The above should fail.
@@ -150,11 +150,11 @@ The above should fail.
 If you want to exclude a namespace from admission control, label it
 
 ```sh
-kubectl label ns ${IMAGE} ignoreAdmissionControl=true --overwrite
+kubectl label ns ${TARGET_IMAGE} ignoreAdmissionControl=true --overwrite
 
 kubectl get ns --show-labels
 
-kubectl run -n ${IMAGE} --image=${IMAGE} --generator=run-pod/v1 ${IMAGE}
+kubectl run -n ${TARGET_IMAGE} --image=${TARGET_IMAGE} --generator=run-pod/v1 ${TARGET_IMAGE}
 ```
 
 This should now work, because Container Control is ignoring the labeled namespace.
