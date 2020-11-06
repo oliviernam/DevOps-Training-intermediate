@@ -2,6 +2,7 @@
 
 - [CI/CD with AWS CodePipeline](#cicd-with-aws-codepipeline)
   - [Prerequisites](#prerequisites)
+  - [Good to Know](#good-to-know)
   - [Create a Workspace - Cloud9](#create-a-workspace---cloud9)
     - [Install Kubernetes tools](#install-kubernetes-tools)
     - [Update IAM Settings for the Workspace](#update-iam-settings-for-the-workspace)
@@ -34,6 +35,27 @@
 - An AWS account
 - A CloudOne Application Security Account
 
+## Good to Know
+
+It is **BAD** practice to store your AWS Access Key and Secret Access Key anywhere within an EC2 instance. You really should never ever do that!
+
+The **GOOD** way is to have an IAM role and attach it to the EC2 instance. IAM roles can come with a policy authorizing exactly what the EC2 instance should be able to do. EC2 instances can then use these profiles automatically without any additional configurations.
+
+*This is the best practice on AWS.*
+
+Basic steps:
+
+- IAM --> Create Role
+  - First, you need to choose the service that will use this role. In the case of an EC2 instance, this is obviously EC2
+  - Search for a fitting policy (e.g. AmazonS3ReadOnlyAccess)
+  - Name the role meaningful (e.g. EC2-S3ReadOnlyAccess)
+  - Use the default description or set your own (e.g. Allows EC2 to make calls to S3)
+- Attach the above created role to your EC2 instance
+
+An EC2 instance can only have one IAM role attached, but an IAM role can be attached to multiple instances, of course. The role enables the instance to make API calls within the given permissions on your behalf.
+
+If you want to create a policy manually, you can ease you life by the [AWS Policy Generator](https://awspolicygen.s3.amazonaws.com/policygen.html) here. Another online tool on this topic is the [IAM Policy Simulator](https://policysim.aws.amazon.com).
+
 **To run through the lab, you can choose to do it within a Cloud9 environment on AWS or using (the kind of experimental) `Multi Cloud Shell`. So either continue with the next chapter or jump to [Create a Workspace - Multi Cloud Shell](#create-a-workspace---multi-cloud-shell)**
 
 ## Create a Workspace - Cloud9
@@ -41,7 +63,7 @@
 - Select Create Cloud9 environment
 - Name it somehow like `ekscluster` (at least have the word ekscluster within the name)
 - Choose “t3.small” for instance type and
-- Amazon Linux as the platform.
+- Amazon Linux 2 as the platform.
 - For the rest take all default values and click Create environment
 - When it comes up, customize the environment by closing the welcome tab and lower work area, and opening a new terminal tab in the main work area.
 
@@ -50,7 +72,7 @@
 We start with kubectl and awscli
 
 ```sh
-sudo curl --silent --location -o /usr/local/bin/kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.15.10/2020-02-22/bin/linux/amd64/kubectl
+sudo curl --silent --location -o /usr/local/bin/kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.17.9/2020-08-04/bin/linux/amd64/kubectl
 sudo chmod +x /usr/local/bin/kubectl
 ```
 
@@ -144,7 +166,7 @@ export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
 export AWS_REGION=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
 ```
 
-Check if AWS_REGION is set to desired region
+Check if AWS_REGION is set to desired region. The above curl to 169.254.269.254 points to an AWS internal url allowing an EC2 instance to query some information about itself without requiring a role for this. Feel free to play with it
 
 ```sh
 test -n "$AWS_REGION" && echo AWS_REGION is "$AWS_REGION" || echo AWS_REGION is not set
