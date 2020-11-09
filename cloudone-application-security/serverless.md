@@ -265,7 +265,7 @@ serverless invoke -f db -l
 We're going to upload sample files to the stores bucket. This is named `insekures3-`SOMETHING with `Public` access.
 
 ```sh
-export STORE_BUCKET=$(aws s3 ls | sed -n 's/.*\(insekures3.*\)/\1/p')
+export STORE_BUCKET=$(aws s3 ls | sed -n 's/.*\(insecures3.*\)/\1/p')
 for f in kubernetes.* ; do aws s3 cp $f s3://${STORE_BUCKET}/$f ; done
 ```
 
