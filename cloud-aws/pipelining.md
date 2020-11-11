@@ -148,7 +148,7 @@ helm version
 - Turn off AWS managed temporary credentials
 - Close the Preferences tab
 
-We should configure our aws cli with our aws credentials and current region as default.
+To create an IAM role which we want to attach to our cloud9 instance, we need temporary administrative privileges in our current shell. To get these, we need to configure our aws cli with our aws credentials and the current region. Directly after assigning the created role to the instance, we're removing the credentials from the environment, of course.
 
 ```sh
 aws configure
@@ -157,7 +157,7 @@ aws configure
 ```sh
 AWS Access Key ID [****************....]: <KEY>
 AWS Secret Access Key [****************....]: <SECRET>
-Default region name [eu-central-1]: 
+Default region name [eu-central-1]:
 Default output format [None]: json
 ```
 

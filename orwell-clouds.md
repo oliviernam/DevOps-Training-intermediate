@@ -20,8 +20,8 @@ Object Storage | Simple Storage Service | Blob Storage | Cloud Storage
 File Storage | Elastic File System | File Storage | File Store
 Virtual Disk Storage | Elastic Block Storage | Premium Storage | Persistent Disk
 |||
-Serverless Applications | EKS on Fargate | App Service | App Engine
 Serverless Functions | Lambda | Service Fabric / Functions | Cloud Functions
+Web Applications | Elastic Beanstalk | App Service | App Engine
 Source Code Version Control | CodeCommit | Repos | Cloud Source Repository
 Pipeline | CodePipeline | Pipelines | Cloud Build
 Build Specification | `buildspec.yml` | `azure-pipelines.yml` | `cloudbuild.yaml`
