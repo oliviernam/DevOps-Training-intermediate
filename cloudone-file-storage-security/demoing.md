@@ -48,7 +48,7 @@ aws s3 mb s3://${SCANNING_BUCKET} --region ${REGION}
 After the stack deployment has been completed, query the `ScannerStackManagementRoleARN` and `StorageStackManagementRoleARN`.
 
 ```sh
-export STACK_NAME=<THE STACK NAME YOU CHOSE, default FileStorageSecurity-All-In-One-Stack>
+export STACK_NAME=<THE STACK NAME YOU CHOSE, default `All-in-one-TM-FileStorageSecurity`>
 
 echo "ScannerStackManagementRoleARN:" $(aws cloudformation describe-stacks --region ${REGION} --stack-name ${STACK_NAME} | jq -r '.Stacks[].Outputs[] | select(.OutputKey=="ScannerStackManagementRoleARN") | .OutputValue')
 
@@ -128,23 +128,23 @@ aws logs describe-log-streams --region ${REGION} --log-group-name ${LOGGROUP_PSA
 {
     "logStreams": [
         {
-            "firstEventTimestamp": 1600349510605, 
-            "lastEventTimestamp": 1600349510855, 
-            "creationTime": 1600349519656, 
-            "uploadSequenceToken": "49610139180714023749403413996239608667913851474239290306", 
-            "logStreamName": "2020/09/17/[$LATEST]157ba4d555ed40d8abea891cdf200607", 
-            "lastIngestionTime": 1600349519663, 
-            "arn": "arn:aws:logs:us-east-1:634503960501:log-group:/aws/lambda/FileStorageSecurity-All-In-PostScanActionTagLambda-PDHWFFZU04BK:log-stream:2020/09/17/[$LATEST]157ba4d555ed40d8abea891cdf200607", 
+            "firstEventTimestamp": 1600349510605,
+            "lastEventTimestamp": 1600349510855,
+            "creationTime": 1600349519656,
+            "uploadSequenceToken": "49610139180714023749403413996239608667913851474239290306",
+            "logStreamName": "2020/09/17/[$LATEST]157ba4d555ed40d8abea891cdf200607",
+            "lastIngestionTime": 1600349519663,
+            "arn": "arn:aws:logs:us-east-1:634503960501:log-group:/aws/lambda/FileStorageSecurity-All-In-PostScanActionTagLambda-PDHWFFZU04BK:log-stream:2020/09/17/[$LATEST]157ba4d555ed40d8abea891cdf200607",
             "storedBytes": 781
-        }, 
+        },
         {
-            "firstEventTimestamp": 1600350792901, 
-            "lastEventTimestamp": 1600350793191, 
-            "creationTime": 1600350801961, 
-            "uploadSequenceToken": "49610792935600704085589188193092891304439081523009500210", 
-            "logStreamName": "2020/09/17/[$LATEST]2d9e363e865d4203a7a916d1efb09b76", 
-            "lastIngestionTime": 1600350801969, 
-            "arn": "arn:aws:logs:us-east-1:634503960501:log-group:/aws/lambda/FileStorageSecurity-All-In-PostScanActionTagLambda-PDHWFFZU04BK:log-stream:2020/09/17/[$LATEST]2d9e363e865d4203a7a916d1efb09b76", 
+            "firstEventTimestamp": 1600350792901,
+            "lastEventTimestamp": 1600350793191,
+            "creationTime": 1600350801961,
+            "uploadSequenceToken": "49610792935600704085589188193092891304439081523009500210",
+            "logStreamName": "2020/09/17/[$LATEST]2d9e363e865d4203a7a916d1efb09b76",
+            "lastIngestionTime": 1600350801969,
+            "arn": "arn:aws:logs:us-east-1:634503960501:log-group:/aws/lambda/FileStorageSecurity-All-In-PostScanActionTagLambda-PDHWFFZU04BK:log-stream:2020/09/17/[$LATEST]2d9e363e865d4203a7a916d1efb09b76",
             "storedBytes": 780
         }
     ]
@@ -174,49 +174,49 @@ In the output of the command we will see the result of the scan on the log:
 
 ```json
 {
-    "nextForwardToken": "f/35689015267218867514194892400432095196956202115806265351", 
+    "nextForwardToken": "f/35689015267218867514194892400432095196956202115806265351",
     "events": [
         {
-            "ingestionTime": 1600350801969, 
-            "timestamp": 1600350792901, 
+            "ingestionTime": 1600350801969,
+            "timestamp": 1600350792901,
             "message": "START RequestId: 1be54d1b-ed5b-48c6-bc13-c0a76e168e2c Version: $LATEST\n"
-        }, 
+        },
         {
-            "ingestionTime": 1600350801969, 
-            "timestamp": 1600350792906, 
+            "ingestionTime": 1600350801969,
+            "timestamp": 1600350792906,
             "message": "version: 0.1.2\n"
-        }, 
+        },
         {
-            "ingestionTime": 1600350801969, 
-            "timestamp": 1600350792906, 
+            "ingestionTime": 1600350801969,
+            "timestamp": 1600350792906,
             "message": "{\"timestamp\": 1600350791.9830256, \"sqs_message_id\": \"c8e79806-474b-47ec-b1b8-c3c72810bb5c\", \"file_url\": \"https://filestoragesecurity-scanning-bucket-gw6i2g.s3.amazonaws.com/eicarcom2.zip\", \"scanner_status\": 0, \"scanner_status_message\": \"successful scan\", \"scanning_result\": {\"TotalBytesOfFile\": 308, \"Findings\": [{\"malware\": \"Eicar_test_file\", \"type\": \"Virus\"}], \"Error\": \"\"}}\n"
-        }, 
+        },
         {
-            "ingestionTime": 1600350801969, 
-            "timestamp": 1600350792906, 
+            "ingestionTime": 1600350801969,
+            "timestamp": 1600350792906,
             "message": "findings: [{\"malware\": \"Eicar_test_file\", \"type\": \"Virus\"}]\n"
-        }, 
+        },
         {
-            "ingestionTime": 1600350801969, 
-            "timestamp": 1600350792906, 
+            "ingestionTime": 1600350801969,
+            "timestamp": 1600350792906,
             "message": "scan result: malicious\n"
-        }, 
+        },
         {
-            "ingestionTime": 1600350801969, 
-            "timestamp": 1600350793186, 
+            "ingestionTime": 1600350801969,
+            "timestamp": 1600350793186,
             "message": "the object has been tagged with scanning results\n"
-        }, 
+        },
         {
-            "ingestionTime": 1600350801969, 
-            "timestamp": 1600350793191, 
+            "ingestionTime": 1600350801969,
+            "timestamp": 1600350793191,
             "message": "END RequestId: 1be54d1b-ed5b-48c6-bc13-c0a76e168e2c\n"
-        }, 
+        },
         {
-            "ingestionTime": 1600350801969, 
-            "timestamp": 1600350793191, 
+            "ingestionTime": 1600350801969,
+            "timestamp": 1600350793191,
             "message": "REPORT RequestId: 1be54d1b-ed5b-48c6-bc13-c0a76e168e2c\tDuration: 289.87 ms\tBilled Duration: 300 ms\tMemory Size: 128 MB\tMax Memory Used: 80 MB\tInit Duration: 500.26 ms\t\n"
         }
-    ], 
+    ],
     "nextBackwardToken": "b/35689015260751651406621011689386736897888177279071944704"
 }
 ```
@@ -291,66 +291,66 @@ aws logs get-query-results --region ${REGION} --query-id 93873c9d-ba90-4520-b7fa
 
 ```json
 {
-    "status": "Complete", 
+    "status": "Complete",
     "statistics": {
-        "recordsMatched": 4.0, 
-        "recordsScanned": 72.0, 
+        "recordsMatched": 4.0,
+        "recordsScanned": 72.0,
         "bytesScanned": 10826.0
-    }, 
+    },
     "results": [
         [
             {
-                "field": "@timestamp", 
+                "field": "@timestamp",
                 "value": "2020-09-18 10:29:22.763"
-            }, 
+            },
             {
-                "field": "@message", 
+                "field": "@message",
                 "value": "scanner result: {\"timestamp\": 1600424962.7634487, \"sqs_message_id\": \"ad471ca3-a000-4409-83b4-eceac8dccf81\", \"file_url\": \"https://filestoragesecurity-scanning-bucket-gw6i2g.s3.amazonaws.com/googlelogo_color_272x92dp.png\", \"scanner_status\": 0, \"scanner_status_message\": \"successful scan\", \"scanning_result\": {\"TotalBytesOfFile\": 13504, \"Findings\": [], \"Error\": \"\"}}\n"
-            }, 
+            },
             {
-                "field": "@ptr", 
+                "field": "@ptr",
                 "value": "CpYBCl0KWTYzNDUwMzk2MDUwMTovYXdzL2xhbWJkYS9GaWxlU3RvcmFnZVNlY3VyaXR5LUFsbC1Jbi1PbmUtU3RhY2stU2Nhbm5lckxhbWJkYS0xNzBXTVFKMkhMVEpSEAcSNRoYAgXwN6G3AAAAAHy/wHYABfZIt/AAAAByIAEo19SLhsouMPzWi4bKLjgQQK8TSPI/UKExEAoYAQ=="
             }
-        ], 
+        ],
         [
             {
-                "field": "@timestamp", 
+                "field": "@timestamp",
                 "value": "2020-09-18 10:27:26.741"
-            }, 
+            },
             {
-                "field": "@message", 
+                "field": "@message",
                 "value": "scanner result: {\"timestamp\": 1600424846.7413783, \"sqs_message_id\": \"aba6b077-5fa4-49cb-ac7f-796349b7e238\", \"file_url\": \"https://filestoragesecurity-scanning-bucket-gw6i2g.s3.amazonaws.com/eicar.com\", \"scanner_status\": 0, \"scanner_status_message\": \"successful scan\", \"scanning_result\": {\"TotalBytesOfFile\": 68, \"Findings\": [{\"malware\": \"Eicar_test_file\", \"type\": \"Virus\"}], \"Error\": \"\"}}\n"
-            }, 
+            },
             {
-                "field": "@ptr", 
+                "field": "@ptr",
                 "value": "CpYBCl0KWTYzNDUwMzk2MDUwMTovYXdzL2xhbWJkYS9GaWxlU3RvcmFnZVNlY3VyaXR5LUFsbC1Jbi1PbmUtU3RhY2stU2Nhbm5lckxhbWJkYS0xNzBXTVFKMkhMVEpSEAMSNRoYAgXqDv8wAAAAAYcWzx8ABfZIsTAAAAYCIAEo+b6EhsouMLnMhIbKLjgSQJMVSMNIUOw3EAwYAQ=="
             }
-        ], 
+        ],
         [
             {
-                "field": "@timestamp", 
+                "field": "@timestamp",
                 "value": "2020-09-17 13:53:11.983"
-            }, 
+            },
             {
-                "field": "@message", 
+                "field": "@message",
                 "value": "scanner result: {\"timestamp\": 1600350791.9830256, \"sqs_message_id\": \"c8e79806-474b-47ec-b1b8-c3c72810bb5c\", \"file_url\": \"https://filestoragesecurity-scanning-bucket-gw6i2g.s3.amazonaws.com/eicarcom2.zip\", \"scanner_status\": 0, \"scanner_status_message\": \"successful scan\", \"scanning_result\": {\"TotalBytesOfFile\": 308, \"Findings\": [{\"malware\": \"Eicar_test_file\", \"type\": \"Virus\"}], \"Error\": \"\"}}\n"
-            }, 
+            },
             {
-                "field": "@ptr", 
+                "field": "@ptr",
                 "value": "CpYBCl0KWTYzNDUwMzk2MDUwMTovYXdzL2xhbWJkYS9GaWxlU3RvcmFnZVNlY3VyaXR5LUFsbC1Jbi1PbmUtU3RhY2stU2Nhbm5lckxhbWJkYS0xNzBXTVFKMkhMVEpSEAQSNRoYAgXbxshSAAAABHXF2zEABfY2m1AAAAAiIAEog8Lc4skuMOXT3OLJLjgUQPYWSKJpUIpSEA4YAQ=="
             }
-        ], 
+        ],
         [
             {
-                "field": "@timestamp", 
+                "field": "@timestamp",
                 "value": "2020-09-17 13:31:49.562"
-            }, 
+            },
             {
-                "field": "@message", 
+                "field": "@message",
                 "value": "scanner result: {\"timestamp\": 1600349509.562536, \"sqs_message_id\": \"38c6e5e8-5ea4-42e6-81d9-198d9aaf6f0a\", \"file_url\": \"https://filestoragesecurity-scanning-bucket-gw6i2g.s3.amazonaws.com/eicar.txt\", \"scanner_status\": 0, \"scanner_status_message\": \"successful scan\", \"scanning_result\": {\"TotalBytesOfFile\": 69, \"Findings\": [{\"malware\": \"Eicar_test_file\", \"type\": \"Virus\"}], \"Error\": \"\"}}\n"
-            }, 
+            },
             {
-                "field": "@ptr", 
+                "field": "@ptr",
                 "value": "CpYBCl0KWTYzNDUwMzk2MDUwMTovYXdzL2xhbWJkYS9GaWxlU3RvcmFnZVNlY3VyaXR5LUFsbC1Jbi1PbmUtU3RhY2stU2Nhbm5lckxhbWJkYS0xNzBXTVFKMkhMVEpSEAMSNRoYAgXqDv8wAAAAAYULjJsABfY2UkAAAAYCIAEotqKO4skuMO2wjuLJLjgSQJIVSLVIUN43EAwYAQ=="
             }
         ]
@@ -412,17 +412,17 @@ Create an execution role for the Lambda function
 
 ```sh
 LAMBDA_TRUST="{
-    \"Version\": \"2012-10-17\", 
+    \"Version\": \"2012-10-17\",
     \"Statement\": [
         {
-            \"Action\": \"sts:AssumeRole\", 
-            \"Effect\": \"Allow\", 
+            \"Action\": \"sts:AssumeRole\",
+            \"Effect\": \"Allow\",
             \"Principal\": {
                 \"Service\": \"lambda.amazonaws.com\"
             }
         }
     ]
-}" 
+}"
 
 export POLICY_ARN=$(aws iam list-policies --scope Local | jq -r '.Policies[] | select(.Arn | contains("FSS")) | .Arn')
 
@@ -538,7 +538,7 @@ Lastly, lets review the scan results.
 ```sh
 export LOGSTREAMS_SL=$(aws logs describe-log-streams --region ${REGION} --log-group-name ${LOGGROUP_PQL} | jq -r '.logStreams[] | .logStreamName')
 
-for ls in ${LOGSTREAMS_SL} ; do 
+for ls in ${LOGSTREAMS_SL} ; do
   aws logs get-log-events --region ${REGION} \
     --log-group-name ${LOGGROUP_PQL} \
     --log-stream-name $ls | \
