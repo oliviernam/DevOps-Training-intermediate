@@ -45,7 +45,7 @@ aws s3 mb s3://${SCANNING_BUCKET} --region ${REGION}
 
 *Note: You don't need to specify the license layer during the private preview phase of FSS.*
 
-After the stack deployment has been completed, query the `ScannerStackManagementRoleARN` and `StorageStackManagementRoleARN`.
+After the stack deployment has been completed, query the `ScannerStackManagementRoleARN` and `StorageStackManagementRoleARN` by the commands below or as told within Cloud One by using the AWS console. Be sure to set at least the `STACK_NAME` variable.
 
 ```sh
 export STACK_NAME=<THE STACK NAME YOU CHOSE, default `All-in-one-TM-FileStorageSecurity`>
