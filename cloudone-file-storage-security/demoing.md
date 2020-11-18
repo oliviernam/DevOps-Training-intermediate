@@ -37,11 +37,11 @@ aws s3 mb s3://${SCANNING_BUCKET} --region ${REGION}
 ```
 
 - Authenticate to Cloud One and select `File Storage Security`
-- Click on [Deploy All-in-One Stack] and follow the Steps
+- Click on `[+ Deploy]` and afterwards `[Scanner Stack and Storage Stack]`follow the Steps
   - Sign in to the AWS account
-  - Launch Stack
-  - Choose the target region for the stack (top right)
-  - Fill in the scanning bucket name from above
+  - Select the desired region as you have set it above
+  - Press `[Launch Stack]`
+  - Within the `[Customizable section]` set the `S3BucketToScan` to the scanning bucket name from above
 
 *Note: You don't need to specify the license layer during the private preview phase of FSS.*
 
