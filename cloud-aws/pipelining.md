@@ -503,7 +503,7 @@ Do the parameter expansion.
 
 ```sh
 export DSSC_HOST=$(kubectl get svc -n ${DSSC_NAMESPACE} proxy -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-export CLUSTER_NAME=$(eksctl get cluster -o json | jq -r '.[].name')
+export CLUSTER_NAME=$(eksctl get cluster -o json | jq -r '.[].metadata.name')
 export CODEBUILD_ROLE_NAME=ekscluster-codebuild
 export IMAGE_NAME=${APP_NAME}
 export IMAGE_TAG=latest
