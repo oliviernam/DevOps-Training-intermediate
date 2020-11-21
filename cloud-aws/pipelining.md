@@ -610,7 +610,7 @@ Execute the following to remove the lab resources
 kubectl delete svc ${APP_NAME}
 helm -n ${DSSC_NAMESPACE} delete deepsecurity-smartcheck
 
-eksctl delete cluster --name `eksctl get cluster -o json | jq -r '.[].name'`
+eksctl delete cluster --name `eksctl get cluster -o json | jq -r '.[].metadata.name'`
 
 aws ec2 delete-key-pair --key-name "ekscluster"
 aws kms delete-alias --alias-name ${KEY_ALIAS_NAME}
